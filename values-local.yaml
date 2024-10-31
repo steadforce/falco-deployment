@@ -1,0 +1,19 @@
+falco:
+  customRules:
+    customized-local-rules.yaml: |-
+      - list: known_drop_and_execute_containers
+        items: [kindest/node]
+      - list: known_drop_and_execute_executables
+        items: [/bin/mount,/bin/umount,/opt/cni/bin/calico,/opt/cni/bin/cilium-cni,/opt/cni/bin/istio-cni]
+      - rule: Drop and execute new binary in container
+        condition: and not proc.exepath in (known_drop_and_execute_executables)
+        append: true
+  resources:
+    requests:
+      cpu: 0m
+      memory: 0Mi
+    limits:
+      cpu: 0m
+      memory: 0Mi
+falco-exporter:
+  resources: ~
