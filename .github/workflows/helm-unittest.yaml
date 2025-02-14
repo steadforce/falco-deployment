@@ -1,0 +1,39 @@
+name: CI
+
+on: [push]
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.15.2
+      - run: |
+          if helm plugin list | grep -q 'unittest'; then
+            helm plugin update unittest
+          else
+            helm plugin install https://github.com/helm-unittest/helm-unittest.git
+          fi
+      - run: helm unittest -t JUnit -o test-output.xml . 
+      - run: helm lint .
+      - name: Helm validation and helmunit tests succeeded
+        if: ${{ success() && contains( github.ref, 'renovate/' ) && !env.ACT }}
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ github.token }}
+          ms-teams-webhook-uri: ${{ secrets.STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK }}
+          notification-summary: "&#x2705; Helm validation and unit tests succeeded!"
+          notification-color: 28a745
+          timezone: Europe/Berlin
+      - name: Helm validation or helmunit tests failed
+        if: ${{ failure() && contains( github.ref, 'renovate/' ) && !env.ACT }}
+        uses: jdcargile/ms-teams-notification@v1.4
+        with:
+          github-token: ${{ github.token }}
+          ms-teams-webhook-uri: ${{ secrets.STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK }}
+          notification-summary: "&#x1F6A2; Helm validation or helmunit tests failed!!!"
+          notification-color: dc3545
+          timezone: Europe/Berlin
