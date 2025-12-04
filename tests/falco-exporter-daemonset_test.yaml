@@ -28,5 +28,5 @@ tests:
       pattern: *localCpuPattern
   - matchRegex:
       path: &requestsMemoryPath spec.template.spec.containers[?(@.name == "falco-exporter")].resources.requests.memory
-      # on local cluster we expect 0 or 0Mi 0Gi memory requests
+      # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
       pattern: "^0(Ki|Mi|Gi)?$"
