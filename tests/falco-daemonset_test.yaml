@@ -23,10 +23,10 @@ tests:
       # on local cluster we expect non 0 memory limits
       pattern: &nonZeroMemoryPattern "^[1-9][0-9]*(Ki|Mi|Gi)?$"
   - matchRegex:
-      path: &requestsCpuPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.cpu
+      path: &cpuRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.cpu
       # on local cluster we expect 0 or 0m cpu requests
       pattern: *localCpuPattern
   - matchRegex:
-      path: &requestsMemoryPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
+      path: &memoryRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
       # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
       pattern: "^0(Ki|Mi|Gi)?$"
