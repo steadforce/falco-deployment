@@ -3,15 +3,14 @@ release:
   name: falco
 tests:
 - it: snapshot test for detecting side effects on falco during local development
-  templates:
+  templates: &daemonsetTemplate
   - charts/falco/templates/daemonset.yaml
   asserts:
   - matchSnapshot: {}
   values: &localValues
   - ../values-local.yaml
 - it: falco container resources for local cluster
-  templates:
-  - charts/falco/templates/daemonset.yaml
+  templates: *daemonsetTemplate
   values: *localValues
   asserts:
   - matchRegex:
