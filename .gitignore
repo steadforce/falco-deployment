@@ -1,2 +1,4 @@
-/.project
-/_local/
+/*
+/*/
+!/hydrated-manifests/
+!README.md
