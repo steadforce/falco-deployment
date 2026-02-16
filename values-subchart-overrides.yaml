@@ -1,0 +1,82 @@
+falco:
+  customRules:
+    customized-rules.yaml: |-
+      - list: known_drop_and_execute_containers
+        items: [gcr.io/kaniko-project/executor,gitea/gitea]
+      - list: read_sensitive_file_images
+        items: [gcr.io/kaniko-project/executor]
+      - macro: user_known_contact_k8s_api_server_activities
+        condition: >
+          (container.image.repository in (
+            ghcr.io/chaos-mesh/chaos-mesh,
+            ghcr.io/kyverno/background-controller,
+            ghcr.io/kyverno/kyverno,
+            ghcr.io/kyverno/reports-controller,
+            jenkins/jenkins,
+            kiwigrid/k8s-sidecar,
+            quay.io/kiali/kiali,
+            quay.io/strimzi/operator,
+            rancher/hyperkube,
+            stakater/forecastle
+          ) or
+          container.name = cleanup and
+            k8s.ns.name = kyverno or
+          k8s.pod.name startswith kyverno-cleanup-admission-reports- and
+            k8s.ns.name = kyverno or
+          k8s.pod.name startswith kyverno-cleanup-cluster-admission-report and
+            k8s.ns.name = kyverno or
+          k8s.pod.name startswith strimzi-cluster-operator- and
+            k8s.ns.name = strimzi-operator or
+          k8s.pod.name startswith kafka-entity-operator- and
+            k8s.ns.name = kafka or
+          proc.exepath in (
+            /usr/local/bin/envoy,
+            /opt/cni/bin/calico,
+            /opt/cni/bin/istio-cni
+          ) or
+          proc.name = calico)
+      - macro: user_known_stand_streams_redirect_activities
+        condition: >
+          (k8s.pod.name startswith canal- and
+            k8s.ns.name = kube-system or
+           k8s.pod.name startswith kured- and
+            k8s.ns.name = kured or
+          container.image.repository in (
+            quay.io/argoproj/argocd,
+            rancher/hyperkube
+          ))
+  driver:
+    kind: modern-bpf
+    modern_bpf:
+      leastPrivileged: false
+  falco:
+    grpc:
+      enabled: true
+    grpc_output:
+      enabled: true
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+  falcoctl:
+    artifact:
+      follow:
+        enabled: false
+      install:
+        enabled: false
+falco-exporter:
+  grafanaDashboard:
+    enabled: true
+    namespace: falco
+    prometheusDatasourceName: Prometheus
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+  serviceMonitor:
+    enabled: true
+    additionalLabels: 
+      prometheus: cluster-monitoring
