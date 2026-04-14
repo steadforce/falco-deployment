@@ -1,0 +1,19 @@
+# checks out this repository and scan it for secrets
+name: Trufflehog
+
+on:
+  push:
+    branches:
+      - main
+      - hydration
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trufflehog:
+    uses: steadforce/steadops-workflows/.github/workflows/trufflehog-oss.yaml@gitleaks-and-version-from-1stdep
