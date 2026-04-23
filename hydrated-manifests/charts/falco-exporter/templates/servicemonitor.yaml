@@ -1,0 +1,21 @@
+---
+# Source: falco/charts/falco-exporter/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: falco-falco-exporter
+  labels:
+    app.kubernetes.io/name: falco-exporter
+    app.kubernetes.io/instance: falco
+    app.kubernetes.io/version: "0.8.3"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: falco-exporter-0.12.1
+    prometheus: "cluster-monitoring"
+  namespace: falco
+spec:
+  endpoints:
+    - port: metrics
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: falco-exporter
+      app.kubernetes.io/instance: falco
