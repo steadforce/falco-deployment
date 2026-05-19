@@ -1,13 +1,26 @@
 falco:
+  falco:
+    log_level: debug
+    grpc:
+      enabled: false
+    grpc_output:
+      enabled: false
+    config_files:
+      - /etc/falco/config.d/falco.iso8601_timeformat.yaml
   customRules:
     customized-local-rules.yaml: |-
       - list: known_drop_and_execute_containers
         items: [kindest/node]
       - list: known_drop_and_execute_executables
-        items: [/bin/mount,/bin/umount,/opt/cni/bin/calico,/opt/cni/bin/cilium-cni,/opt/cni/bin/istio-cni]
+        items: [/bin/mount,/usr/bin/mount,/bin/umount,/usr/bin/umount,/opt/cni/bin/calico,/opt/cni/bin/cilium-cni,/opt/cni/bin/istio-cni]
       - rule: Drop and execute new binary in container
         condition: and not proc.exepath in (known_drop_and_execute_executables)
-        append: true
+        override:
+          condition: append
+      - macro: user_known_contact_k8s_api_server_activities
+        condition: and (k8s.ns.name in (prometheus-operator, kube-system))
+        override:
+          condition: append
   resources:
     requests:
       cpu: 0m
@@ -15,11 +28,3 @@ falco:
     limits:
       cpu: 0m
       memory: 256Mi
-falco-exporter:
-  resources:
-    requests:
-      cpu: 0m
-      memory: 0Mi
-    limits:
-      cpu: 0m
-      memory: 32Mi

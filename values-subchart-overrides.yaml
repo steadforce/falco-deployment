@@ -8,13 +8,22 @@ falco:
       - macro: user_known_contact_k8s_api_server_activities
         condition: >
           (container.image.repository in (
+            docker.io/stakater/forecastle,
+            gcr.io/istio-release/pilot,
+            gcr.io/istio-release/proxyv2,
             ghcr.io/chaos-mesh/chaos-mesh,
+            registry.k8s.io/autoscaling/vpa-admission-controller,
             ghcr.io/kyverno/background-controller,
+            ghcr.io/kyverno/cleanup-controller,
             ghcr.io/kyverno/kyverno,
             ghcr.io/kyverno/reports-controller,
             jenkins/jenkins,
             kiwigrid/k8s-sidecar,
+            quay.io/argoproj/argocd,
             quay.io/kiali/kiali,
+            quay.io/kiali/kiali-operator,
+            quay.io/kiwigrid/k8s-sidecar,
+            quay.io/metallb/controller,
             quay.io/strimzi/operator,
             rancher/hyperkube,
             stakater/forecastle
@@ -29,8 +38,21 @@ falco:
             k8s.ns.name = strimzi-operator or
           k8s.pod.name startswith kafka-entity-operator- and
             k8s.ns.name = kafka or
+          k8s.pod.name startswith prometheus-prometheus-operator-kube-p-prometheus- and
+            k8s.ns.name = prometheus-operator or
+          k8s.ns.name = crossplane-system and
+            proc.exepath = /usr/local/bin/provider or
+          proc.exepath = /kube-state-metrics and
+            proc.name startswith kube-state-metr or
+          proc.exepath = /postgres-operator and
+            proc.name startswith postgres-operat or
+          proc.name = kyverno and
+            proc.exepath = /ko-app/kyverno or
+          proc.name = flanneld and
+            (k8s.ns.name in (kube-system, kube-flannel) or
+             container.image.repository = rancher/mirrored-flannel-flannel or
+             proc.exepath = /opt/bin/flanneld) or
           proc.exepath in (
-            /usr/local/bin/envoy,
             /opt/cni/bin/calico,
             /opt/cni/bin/istio-cni
           ) or
@@ -43,8 +65,16 @@ falco:
             k8s.ns.name = kured or
           container.image.repository in (
             quay.io/argoproj/argocd,
+            quay.io/kiali/kiali-operator,
             rancher/hyperkube
           ))
+      - macro: user_shell_container_exclusions
+        condition: >
+          (proc.pname=postgres and
+            (proc.cmdline contains "/scripts/restore_command.sh" or
+             proc.cmdline contains "wal-g wal-push") and
+            proc.cmdline contains "wal-e.d/env" and
+            k8s.ns.name = postgres)
   driver:
     kind: modern-bpf
     modern_bpf:
@@ -58,25 +88,18 @@ falco:
     requests:
       cpu: 200m
       memory: 768Mi
+  metrics:
+    enabled: true
+  falco:
+    webserver:
+      prometheus_metrics_enabled: true
+  serviceMonitor:
+    create: true
+    labels:
+      prometheus: cluster-monitoring
   falcoctl:
     artifact:
       follow:
         enabled: false
       install:
         enabled: false
-falco-exporter:
-  grafanaDashboard:
-    enabled: true
-    namespace: falco
-    prometheusDatasourceName: Prometheus
-  resources:
-    requests:
-      cpu: 10m
-      memory: 32Mi
-    limits:
-      cpu: 200m
-      memory: 64Mi
-  serviceMonitor:
-    enabled: true
-    additionalLabels: 
-      prometheus: cluster-monitoring
