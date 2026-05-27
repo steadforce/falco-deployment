@@ -65,10 +65,10 @@ echo "fs.inotify.max_user_instances = 512" | sudo tee -a /etc/sysctl.conf
     helm template \
       -a "$(cluster=$cluster yq '.environments.[env(cluster)].apis | @csv' helm-config.yaml)" \
       -f "$(cluster=$cluster yq '.environments.[env(cluster)].valueFiles | @csv' helm-config.yaml)" \
-      -n $(yq 'explode(.) | .namespace // ""' helm-config.yaml) \
+      -n "$(yq 'explode(.) | .namespace // ""' helm-config.yaml)" \
       --output-dir _local/$cluster \
       --include-crds \
-      --release-name $(yq 'explode(.) | .releaseName // ""' helm-config.yaml) \
+      --release-name "$(yq 'explode(.) | .releaseName // ""' helm-config.yaml)" \
       --skip-tests \
       .
  done

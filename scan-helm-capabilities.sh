@@ -20,8 +20,8 @@ echo "📂 Working in temp directory: $WORK_DIR"
 # Cleanup on exit
 trap 'rm -rf -- "$WORK_DIR"' EXIT
 
-# Copy the chart to temp dir
-cp -r "$CHART_DIR"/* "$WORK_DIR/"
+# Copy the chart to temp dir (including hidden files)
+cp -r "$CHART_DIR/." "$WORK_DIR/"
 
 pushd "$WORK_DIR" > /dev/null
 
@@ -31,6 +31,12 @@ helm dependency update > /dev/null 2>&1
 echo "📦 Extracting all charts (recursive)..."
 while [ -n "$(find . -name '*.tgz' -print -quit)" ]; do
     find . -name "*.tgz" -type f | while read -r tarball; do
+        # Validate archive contents to prevent path traversal before extraction
+        if tar -tzf "$tarball" | grep -qE '(^/|(^|/)\.\.(/|$))'; then
+            echo "⚠️  Skipping suspicious archive with unsafe paths: $tarball" >&2
+            rm "$tarball"
+            continue
+        fi
         tar -xzf "$tarball" -C "$(dirname "$tarball")"
         rm "$tarball"
     done
