@@ -1,0 +1,31 @@
+---
+# Source: falco/charts/falco/templates/serviceMonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: falco
+  namespace: falco
+  labels:
+    helm.sh/chart: falco-8.0.2
+    app.kubernetes.io/name: falco
+    app.kubernetes.io/instance: falco
+    app.kubernetes.io/version: "0.43.1"
+    app.kubernetes.io/managed-by: Helm
+    prometheus: cluster-monitoring
+spec:
+  endpoints:
+    - port: "metrics"
+      interval: 15s
+      scrapeTimeout: 10s
+      honorLabels: true
+      path: /metrics
+      scheme: http
+  jobLabel: "falco"
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: falco
+      app.kubernetes.io/name: falco
+      type: falco-metrics
+  namespaceSelector:
+    matchNames:
+      - falco
