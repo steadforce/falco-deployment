@@ -84,15 +84,14 @@ falco:
       enabled: true
     grpc_output:
       enabled: true
+    webserver:
+      prometheus_metrics_enabled: true
   resources:
     requests:
       cpu: 200m
       memory: 768Mi
   metrics:
     enabled: true
-  falco:
-    webserver:
-      prometheus_metrics_enabled: true
   serviceMonitor:
     create: true
     labels:
