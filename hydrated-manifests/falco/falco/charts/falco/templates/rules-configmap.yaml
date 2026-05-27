@@ -1,0 +1,102 @@
+---
+# Source: falco/charts/falco/templates/rules-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: falco-rules
+  namespace: falco
+  labels:
+    helm.sh/chart: falco-8.0.2
+    app.kubernetes.io/name: falco
+    app.kubernetes.io/instance: falco
+    app.kubernetes.io/version: "0.43.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  customized-local-rules.yaml: |-
+    - list: known_drop_and_execute_containers
+      items: [kindest/node]
+    - list: known_drop_and_execute_executables
+      items: [/bin/mount,/usr/bin/mount,/bin/umount,/usr/bin/umount,/opt/cni/bin/calico,/opt/cni/bin/cilium-cni,/opt/cni/bin/istio-cni]
+    - rule: Drop and execute new binary in container
+      condition: and not proc.exepath in (known_drop_and_execute_executables)
+      override:
+        condition: append
+    - macro: user_known_contact_k8s_api_server_activities
+      condition: and (k8s.ns.name in (prometheus-operator, kube-system))
+      override:
+        condition: append
+  customized-rules.yaml: |-
+    - list: known_drop_and_execute_containers
+      items: [gcr.io/kaniko-project/executor,gitea/gitea]
+    - list: read_sensitive_file_images
+      items: [gcr.io/kaniko-project/executor]
+    - macro: user_known_contact_k8s_api_server_activities
+      condition: >
+        (container.image.repository in (
+          docker.io/stakater/forecastle,
+          gcr.io/istio-release/pilot,
+          gcr.io/istio-release/proxyv2,
+          ghcr.io/chaos-mesh/chaos-mesh,
+          registry.k8s.io/autoscaling/vpa-admission-controller,
+          ghcr.io/kyverno/background-controller,
+          ghcr.io/kyverno/cleanup-controller,
+          ghcr.io/kyverno/kyverno,
+          ghcr.io/kyverno/reports-controller,
+          jenkins/jenkins,
+          kiwigrid/k8s-sidecar,
+          quay.io/argoproj/argocd,
+          quay.io/kiali/kiali,
+          quay.io/kiali/kiali-operator,
+          quay.io/kiwigrid/k8s-sidecar,
+          quay.io/metallb/controller,
+          quay.io/strimzi/operator,
+          rancher/hyperkube,
+          stakater/forecastle
+        ) or
+        container.name = cleanup and
+          k8s.ns.name = kyverno or
+        k8s.pod.name startswith kyverno-cleanup-admission-reports- and
+          k8s.ns.name = kyverno or
+        k8s.pod.name startswith kyverno-cleanup-cluster-admission-report and
+          k8s.ns.name = kyverno or
+        k8s.pod.name startswith strimzi-cluster-operator- and
+          k8s.ns.name = strimzi-operator or
+        k8s.pod.name startswith kafka-entity-operator- and
+          k8s.ns.name = kafka or
+        k8s.pod.name startswith prometheus-prometheus-operator-kube-p-prometheus- and
+          k8s.ns.name = prometheus-operator or
+        k8s.ns.name = crossplane-system and
+          proc.exepath = /usr/local/bin/provider or
+        proc.exepath = /kube-state-metrics and
+          proc.name startswith kube-state-metr or
+        proc.exepath = /postgres-operator and
+          proc.name startswith postgres-operat or
+        proc.name = kyverno and
+          proc.exepath = /ko-app/kyverno or
+        proc.name = flanneld and
+          (k8s.ns.name in (kube-system, kube-flannel) or
+           container.image.repository = rancher/mirrored-flannel-flannel or
+           proc.exepath = /opt/bin/flanneld) or
+        proc.exepath in (
+          /opt/cni/bin/calico,
+          /opt/cni/bin/istio-cni
+        ) or
+        proc.name = calico)
+    - macro: user_known_stand_streams_redirect_activities
+      condition: >
+        (k8s.pod.name startswith canal- and
+          k8s.ns.name = kube-system or
+         k8s.pod.name startswith kured- and
+          k8s.ns.name = kured or
+        container.image.repository in (
+          quay.io/argoproj/argocd,
+          quay.io/kiali/kiali-operator,
+          rancher/hyperkube
+        ))
+    - macro: user_shell_container_exclusions
+      condition: >
+        (proc.pname=postgres and
+          (proc.cmdline contains "/scripts/restore_command.sh" or
+           proc.cmdline contains "wal-g wal-push") and
+          proc.cmdline contains "wal-e.d/env" and
+          k8s.ns.name = postgres)
