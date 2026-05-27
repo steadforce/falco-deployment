@@ -89,7 +89,7 @@ is a good starting point.
 ## Hydration Workflow
 
 This repository implements a **GitOps Hydration Pattern**.
-The `helm-hydration.yaml` workflow is triggered by pushes to the `main` and `hydration` branches. It renders the Helm charts into static Kubernetes manifests and opens automated Pull Requests targeting the specific environment branches (e.g., `environments/local`, `environments/sf-k8s01-prod`) defined in `helm-config.yaml`.
+The `helm-hydration.yaml` workflow is triggered by pushes to the `main` branch. It renders the Helm charts into static Kubernetes manifests and opens automated Pull Requests targeting the specific environment branches (e.g., `environments/local`, `environments/sf-k8s01-prod`) defined in `helm-config.yaml`.
 
 ### API Capabilities Configuration
 Because the hydration process runs in a CI environment without access to a live Kubernetes cluster, it must **mock** the cluster's available APIs (CRDs). This is controlled via the `apis` list in `helm-config.yaml`.
