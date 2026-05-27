@@ -23,7 +23,7 @@ spec:
         app.kubernetes.io/name: falco
         app.kubernetes.io/instance: falco
       annotations:
-        checksum/config: 4bab3b7848b5d61068e532615ccb846fcb72f80b6d79f32a31ab46ec6ee820bb
+        checksum/config: ff37d3f5610ac285fe3cbed227584530c2e5098064e105ad5034f39a15d362b5
         checksum/rules: ade4b3d1a2324e8416b40b9c99cb91eff6239c9453c780f3e42b005cc954e6a7
         checksum/certs: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
@@ -101,6 +101,10 @@ spec:
               name: container-engine-socket-4
             - mountPath: /host/run/k3s/containerd/containerd.sock
               name: container-engine-socket-5
+            - mountPath: /etc/falco
+              name: rulesfiles-install-dir
+            - mountPath: /usr/share/falco/plugins
+              name: plugins-install-dir
             - mountPath: /root/.falco
               name: root-falco-fs
             - mountPath: /host/proc
@@ -116,7 +120,41 @@ spec:
               subPath: falco.yaml
             - mountPath: /etc/falco/rules.d
               name: rules-volume
+        - name: falcoctl-artifact-follow
+          image: docker.io/falcosecurity/falcoctl:0.12.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - artifact
+            - follow
+            - --log-format=json
+          securityContext:
+          volumeMounts:
+            - mountPath: /plugins
+              name: plugins-install-dir
+            - mountPath: /rulesfiles
+              name: rulesfiles-install-dir
+            - mountPath: /etc/falcoctl
+              name: falcoctl-config-volume
+            - mountPath: /artifactstate
+              name: artifact-state-dir
       initContainers:
+        - name: falcoctl-artifact-install
+          image: docker.io/falcosecurity/falcoctl:0.12.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - artifact
+            - install
+            - --log-format=json
+          securityContext:
+          volumeMounts:
+            - mountPath: /plugins
+              name: plugins-install-dir
+            - mountPath: /rulesfiles
+              name: rulesfiles-install-dir
+            - mountPath: /etc/falcoctl
+              name: falcoctl-config-volume
+            - mountPath: /artifactstate
+              name: artifact-state-dir
       volumes:
         - hostPath:
             path: /var/run/docker.sock
@@ -136,6 +174,12 @@ spec:
         - hostPath:
             path: /run/k3s/containerd/containerd.sock
           name: container-engine-socket-5
+        - name: plugins-install-dir
+          emptyDir: {}
+        - name: rulesfiles-install-dir
+          emptyDir: {}
+        - name: artifact-state-dir
+          emptyDir: {}
         - name: root-falco-fs
           emptyDir: {}
         - name: boot-fs

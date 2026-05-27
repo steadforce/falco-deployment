@@ -27,7 +27,7 @@ data:
       mode: rules
       path_prefix: /tmp/falco
     config_files:
-    - /etc/falco/config.d/falco.iso8601_timeformat.yaml
+    - /etc/falco/config.d
     engine:
       kind: modern_ebpf
       modern_ebpf:
@@ -73,6 +73,7 @@ data:
       enabled: true
       severity: info
     load_plugins:
+    - k8smeta
     - container
     log_level: debug
     log_stderr: true
@@ -95,6 +96,14 @@ data:
     outputs_queue:
       capacity: 0
     plugins:
+    - init_config:
+        collectorHostname: falco-k8s-metacollector.falco.svc
+        collectorPort: 45000
+        hostProc: /host
+        nodeName: ${FALCO_K8S_NODE_NAME}
+        verbosity: info
+      library_path: libk8smeta.so
+      name: k8smeta
     - init_config:
         engines:
           bpm:
