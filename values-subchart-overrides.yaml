@@ -1,4 +1,7 @@
 falco:
+  collectors:
+    kubernetes:
+      enabled: true
   customRules:
     customized-rules.yaml: |-
       - list: known_drop_and_execute_containers
@@ -81,9 +84,9 @@ falco:
       leastPrivileged: false
   falco:
     grpc:
-      enabled: true
+      enabled: false
     grpc_output:
-      enabled: true
+      enabled: false
     webserver:
       prometheus_metrics_enabled: true
   resources:
@@ -96,9 +99,3 @@ falco:
     create: true
     labels:
       prometheus: cluster-monitoring
-  falcoctl:
-    artifact:
-      follow:
-        enabled: false
-      install:
-        enabled: false

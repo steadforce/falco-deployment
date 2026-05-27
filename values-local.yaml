@@ -1,12 +1,6 @@
 falco:
   falco:
     log_level: debug
-    grpc:
-      enabled: false
-    grpc_output:
-      enabled: false
-    config_files:
-      - /etc/falco/config.d/falco.iso8601_timeformat.yaml
   customRules:
     customized-local-rules.yaml: |-
       - list: known_drop_and_execute_containers
