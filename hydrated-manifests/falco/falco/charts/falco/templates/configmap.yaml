@@ -45,10 +45,10 @@ data:
       keep_alive: false
     grpc:
       bind_address: unix:///run/falco/falco.sock
-      enabled: true
+      enabled: false
       threadiness: 0
     grpc_output:
-      enabled: true
+      enabled: false
     http_output:
       ca_bundle: ""
       ca_cert: ""
@@ -73,6 +73,7 @@ data:
       enabled: true
       severity: info
     load_plugins:
+    - k8smeta
     - container
     log_level: info
     log_stderr: true
@@ -95,6 +96,14 @@ data:
     outputs_queue:
       capacity: 0
     plugins:
+    - init_config:
+        collectorHostname: falco-k8s-metacollector.falco.svc
+        collectorPort: 45000
+        hostProc: /host
+        nodeName: ${FALCO_K8S_NODE_NAME}
+        verbosity: info
+      library_path: libk8smeta.so
+      name: k8smeta
     - init_config:
         engines:
           bpm:
