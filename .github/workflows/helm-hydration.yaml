@@ -1,0 +1,14 @@
+name: Helm hydration
+
+on:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  hydration:
+    uses: steadforce/steadops-workflows/.github/workflows/helm-hydration.yaml@v2.0.0

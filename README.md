@@ -2,7 +2,7 @@
 Repository containing manifests for falco installation. Never install the content of 
 this repo on our clusters manually. This is all done by argocd.
 ## Dependencies
-This chart pulls in `falco` and `falco-exporter` as a dependency. The version
+This chart pulls in `falco` as a dependency. The version
 used is specified in `Chart.yaml` in the `dependencies` section.
 If you change the version in there, you need to then run
 
@@ -57,23 +57,61 @@ echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf
 echo "fs.inotify.max_user_instances = 512" | sudo tee -a /etc/sysctl.conf
 ```
 
-## Render helm charts locally
+## Render all manifests locally
 
-The following command renders the charts like argo-cd does to validate the content.
-
-### local
-
-```
- helm template --release-name falco -n falco --include-crds --skip-tests \
-  -a autoscaling.k8s.io/v1 \
-  -a cert-manager.io/v1 \
-  -a forecastle.stakater.com/v1alpha1 \
-  -a keycloak.org/v1alpha1 \
-  -a kiali.io/v1alpha1 \
-  -a monitoring.coreos.com/v1 \
-  -a networking.istio.io/v1beta1 \
-  -a security.istio.io/v1beta1 \
-  -f values-local.yaml \
-  --output-dir _local . 
+```shell
+ helm dependency update && \
+ for cluster in $(yq '.environments | keys[]' helm-config.yaml); do
+    helm template \
+      -a "$(cluster=$cluster yq '.environments.[env(cluster)].apis | @csv' helm-config.yaml)" \
+      -f "$(cluster=$cluster yq '.environments.[env(cluster)].valueFiles | @csv' helm-config.yaml)" \
+      -n "$(yq 'explode(.) | .namespace // ""' helm-config.yaml)" \
+      --output-dir _local/$cluster \
+      --include-crds \
+      --release-name "$(yq 'explode(.) | .releaseName // ""' helm-config.yaml)" \
+      --skip-tests \
+      .
+ done
 ```
 
+## Run GitHub pipeline locally
+
+To run the GitHub pipeline in the local environment, start the workbench, cd into the folder containing this
+`README.md` and execute the following command:
+
+```shell
+  act
+```
+
+On first execution, you're asked which flavour of the act image should be used. Using the default `medium`
+is a good starting point.
+
+## Hydration Workflow
+
+This repository implements a **GitOps Hydration Pattern**.
+The `helm-hydration.yaml` workflow is triggered by pushes to the `main` branch. It renders the Helm charts into static Kubernetes manifests and opens automated Pull Requests targeting the specific environment branches (e.g., `environments/local`, `environments/sf-k8s01-prod`) defined in `helm-config.yaml`.
+
+### API Capabilities Configuration
+Because the hydration process runs in a CI environment without access to a live Kubernetes cluster, it must **mock** the cluster's available APIs (CRDs). This is controlled via the `apis` list in `helm-config.yaml`.
+
+If a chart (or its dependencies) uses conditional logic like `if .Capabilities.APIVersions.Has "..."`, and the specific API is missing from `helm-config.yaml`, the resource will **not** be rendered in the final manifest.
+
+### Dependency Scanning
+To ensure all conditional resources are correctly rendered, use the provided static analysis tool:
+
+```bash
+./scan-helm-capabilities.sh
+```
+
+> **Note:** The script requires `helm` to be available in your `PATH`. Since `helm` is not installed locally, run it via Docker:
+> ```bash
+> docker run --rm -u $(id -u) -v "$PWD:/chart" -w /chart \
+>   --entrypoint /bin/sh alpine/helm \
+>   -c 'apk add --no-cache bash grep > /dev/null 2>&1 && bash scan-helm-capabilities.sh'
+> ```
+
+This script:
+1.  Downloads and extracts all chart dependencies locally.
+2.  Recursively scans all templates (`.yaml`, `.yml`, `.tpl`) in your chart and its sub-charts.
+3.  Identifies every instance of `.Capabilities.APIVersions.Has`.
+4.  Outputs the exact list of API strings (Groups and Kinds) required in your `helm-config.yaml`.
