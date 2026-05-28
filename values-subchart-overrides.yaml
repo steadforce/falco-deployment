@@ -18,6 +18,7 @@ falco:
             registry.k8s.io/autoscaling/vpa-admission-controller,
             ghcr.io/kyverno/background-controller,
             ghcr.io/kyverno/cleanup-controller,
+            reg.kyverno.io/kyverno/cleanup-controller,
             ghcr.io/kyverno/kyverno,
             ghcr.io/kyverno/reports-controller,
             jenkins/jenkins,
@@ -73,11 +74,24 @@ falco:
           ))
       - macro: user_shell_container_exclusions
         condition: >
-          (proc.pname=postgres and
-            (proc.cmdline contains "/scripts/restore_command.sh" or
-             proc.cmdline contains "wal-g wal-push") and
-            proc.cmdline contains "wal-e.d/env" and
-            k8s.ns.name = postgres)
+          (proc.name=postgres and
+          proc.cmdline contains "wal-e.d/env" and
+          k8s.ns.name = postgres and
+          (proc.cmdline contains "/scripts/restore_command.sh" or
+            proc.cmdline contains "wal-g wal-push"))
+      - macro: known_ptrace_procs
+        condition: >
+          (proc.exepath = /opt/traps/bin/pmd and
+          proc.name = InjectionThread)
+      - macro: allowed_clear_log_files
+        condition: >
+          (proc.name in (rkhunter, cp, sh) and
+           (fd.name startswith "/var/log/rkhunter" or
+            fd.name startswith "/var/log/rkhunter_"))
+      - macro: user_known_read_sensitive_files_activities
+        condition: >
+          (proc.name = rkhunter and fd.name = "/etc/shadow")
+      
   driver:
     kind: modern-bpf
     modern_bpf:
