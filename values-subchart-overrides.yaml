@@ -76,39 +76,39 @@ falco:
           ))
       - macro: user_shell_container_exclusions
         condition: >
-          (
-            proc.name=postgres and
-            proc.cmdline contains "wal-e.d/env" and
-            k8s.ns.name = postgres and
-            (
-              proc.cmdline contains "/scripts/restore_command.sh" or
-              proc.cmdline contains "wal-g wal-push"
-            )
-          ) or
-          (
-            proc.pname = "postgres" and
-            k8s.pod.name contains "standby-prod-moodle-postgres-cluster" and
-            evt.type = execve and
-            evt.dir = "<" and
-            proc.name in ("sh", "bash")
-          ) or
-          (
-            parent_exe = /usr/lib/postgresql/15/bin/initdb and
-            proc.name in ("sh", "bash")
-          )
+          (proc.name = "postgres" and
+          proc.cmdline contains "wal-e.d/env" and
+          k8s.ns.name = "postgres" and
+          (proc.cmdline contains "/scripts/restore_command.sh" or
+            proc.cmdline contains "wal-g wal-push")) or
+          (proc.pname = "postgres" and
+          k8s.pod.name contains "standby-prod-moodle-postgres-cluster" and
+          evt.type = execve and
+          evt.dir = "<" and
+          proc.name in ("sh", "bash")) or
+          (parent.exepath = "/usr/lib/postgresql/15/bin/initdb" and
+          proc.name in ("sh", "bash"))
+
       - macro: known_ptrace_procs
         condition: >
-          (proc.exepath = /opt/traps/bin/pmd and
-          proc.name = InjectionThread)
+          (proc.exepath = "/opt/traps/bin/pmd" and
+          proc.name = "InjectionThread")
+
       - macro: allowed_clear_log_files
         condition: >
-          (proc.name in (rkhunter, cp, sh) and
-           (fd.name startswith "/var/log/rkhunter" or
-            fd.name startswith "/var/log/rkhunter_"))
+          (proc.name in ("rkhunter", "cp", "sh") and
+          (fd.name startswith "/var/log/rkhunter" or
+            fd.name startswith "/var/log/dpkg.log" or
+            fd.name contains "/usr/sbin/cron" or
+            fd.name contains "/etc/default/cron" or
+            fd.name contains "/etc/init.d/cron" or
+            fd.name contains "/etc/pam.d/cron"))
+
       - macro: user_known_read_sensitive_files_activities
         condition: >
-          (proc.name = rkhunter and fd.name = "/etc/shadow")
-      
+          (proc.name = "rkhunter" and
+          fd.name = "/etc/shadow") or
+          (fd.name startswith "/etc/pam.d/") 
   driver:
     kind: modern-bpf
     modern_bpf:
