@@ -86,13 +86,9 @@ falco:
             )
           ) or
           (
-            proc.pname = "postgres" and
+            proc.name = "postgres" and
             k8s.pod.name contains "standby-prod-moodle-postgres-cluster" and
             evt.type = execve and
-            proc.name in ("sh", "bash")
-          ) or
-          (
-            parent_exe = "/usr/lib/postgresql/15/bin/initdb" and
             proc.name in ("sh", "bash")
           )
 
