@@ -65,9 +65,7 @@ falco:
           proc.name = calico or
           (
             k8s.ns.name = "postgres" and
-            k8s.pod.name contains "standby-prod-moodle-postgres-cluster" and
-            fd.rip = "10.43.0.1" and
-            fd.rport = 443
+            k8s.pod.name contains "standby-prod-moodle-postgres-cluster"
           ))
       - macro: user_known_stand_streams_redirect_activities
         condition: >
@@ -83,7 +81,7 @@ falco:
       - macro: user_shell_container_exclusions
         condition: >
           (
-            proc.name = "postgres" and
+            proc.pname = "postgres" and
             proc.cmdline contains "wal-e.d/env" and
             k8s.ns.name = "postgres" and
             (
@@ -122,7 +120,8 @@ falco:
         condition: >
           (proc.name = "rkhunter" and
           fd.name = "/etc/shadow") or
-          (fd.name startswith "/etc/pam.d/") 
+          (proc.name = "rkhunter" and
+          fd.name startswith "/etc/pam.d/") 
   driver:
     kind: modern-bpf
     modern_bpf:
