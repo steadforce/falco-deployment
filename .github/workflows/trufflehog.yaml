@@ -1,14 +1,16 @@
-# checks out this repository and scan it for secrets
+# Triggers the Trufflehog secret scan reusable workflow from steadops-workflows.
+# The actual checkout and scanning logic lives in the called workflow.
+# See: https://github.com/steadforce/steadops-workflows/blob/main/.github/workflows/trufflehog-oss.yaml
 name: Trufflehog
 
 on:
   push:
     branches:
-      - main
-      - trufflehog
+    - main
   pull_request:
     branches:
-      - main
+    - main
+  # Allow manual execution from the GitHub Actions UI for on-demand scans.
   workflow_dispatch:
 
 permissions:
@@ -16,4 +18,4 @@ permissions:
 
 jobs:
   trufflehog:
-    uses: steadforce/steadops-workflows/.github/workflows/trufflehog-oss.yaml@gitleaks-and-version-from-1stdep
+    uses: steadforce/steadops-workflows/.github/workflows/trufflehog-oss.yaml@v3.0.0
