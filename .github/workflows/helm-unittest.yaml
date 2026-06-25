@@ -10,6 +10,6 @@ permissions:
 
 jobs:
   unittest:
-    uses: steadforce/steadops-workflows/.github/workflows/helm-unittest.yaml@main
+    uses: steadforce/steadops-workflows/.github/workflows/helm-unittest.yaml@v3.0.0
     secrets:
       steadops-helm-renovation-ms-teams-webhook: ${{ secrets.STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK }}
