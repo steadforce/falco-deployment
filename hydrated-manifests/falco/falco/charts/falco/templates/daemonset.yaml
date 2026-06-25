@@ -24,7 +24,7 @@ spec:
         app.kubernetes.io/instance: falco
       annotations:
         checksum/config: 840de21983d4afe177562e4fd3c45988d3731ec7ff9d1e0bc20f02c71b17d9d9
-        checksum/rules: efc0eb8f5d33c25b49adc133924381d3c2ba5e500e502ebe70be4905332b88d4
+        checksum/rules: f94858a013441b1235d710a947610ccb4d3e2342f662b3c085d7500f81f07f06
         checksum/certs: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       serviceAccountName: falco
