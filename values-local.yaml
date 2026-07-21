@@ -16,9 +16,8 @@ falco:
         override:
           condition: append
   resources:
+    limits:
+      cpu: 0m
     requests:
       cpu: 0m
       memory: 0Mi
-    limits:
-      cpu: 0m
-      memory: 256Mi
