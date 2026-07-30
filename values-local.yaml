@@ -21,4 +21,4 @@ falco:
       memory: 0Mi
     limits:
       cpu: 0m
-      memory: 256Mi
+      memory: 1Gi
