@@ -27,3 +27,13 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)metrics:.*?enabled: true"
+- it: disables the grpc and grpc_output servers
+  templates: *configmapTemplate
+  values: *nonLocalValues
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)grpc:.*?enabled: false"
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)grpc_output:.*?enabled: false"
