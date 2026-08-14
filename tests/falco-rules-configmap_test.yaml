@@ -1,0 +1,25 @@
+suite: falco custom rules configmap content per environment
+release:
+  name: falco
+templates: &rulesConfigmapTemplate
+- charts/falco/templates/rules-configmap.yaml
+tests:
+- it: renders the shared custom rules file for all clusters
+  templates: *rulesConfigmapTemplate
+  values:
+  - ../values-subchart-overrides.yaml
+  asserts:
+  - exists:
+      path: data["customized-rules.yaml"]
+  - notExists:
+      path: data["customized-local-rules.yaml"]
+- it: additionally renders the local-only custom rules file on local development
+  templates: *rulesConfigmapTemplate
+  values:
+  - ../values-subchart-overrides.yaml
+  - ../values-local.yaml
+  asserts:
+  - exists:
+      path: data["customized-rules.yaml"]
+  - exists:
+      path: data["customized-local-rules.yaml"]

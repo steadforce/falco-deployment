@@ -29,3 +29,21 @@ tests:
       path: &memoryRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
       # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
       pattern: "^0(Ki|Mi|Gi)?$"
+- it: falco container resources for non-local clusters (dev and prod)
+  templates: *daemonsetTemplate
+  values: &nonLocalValues
+  - ../values-subchart-overrides.yaml
+  asserts:
+  - matchRegex:
+      path: *cpuLimitsPath
+      # on non-local clusters we expect a non-zero cpu limit
+      pattern: &nonZeroCpuPattern "^[1-9][0-9]*(m)?$"
+  - matchRegex:
+      path: *memoryLimitsPath
+      pattern: *nonZeroMemoryPattern
+  - matchRegex:
+      path: *cpuRequestsPath
+      pattern: *nonZeroCpuPattern
+  - matchRegex:
+      path: *memoryRequestsPath
+      pattern: *nonZeroMemoryPattern

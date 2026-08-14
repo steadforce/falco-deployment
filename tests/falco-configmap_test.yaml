@@ -1,0 +1,29 @@
+suite: falco application config driven by cluster overrides
+release:
+  name: falco
+templates: &configmapTemplate
+- charts/falco/templates/configmap.yaml
+values: &nonLocalValues
+- ../values-subchart-overrides.yaml
+tests:
+- it: enables the modern eBPF driver via the modern-bpf alias
+  templates: *configmapTemplate
+  values: *nonLocalValues
+  asserts:
+  - matchRegex:
+      path: data["falco.yaml"]
+      # only the modern_ebpf engine block should be rendered, not kmod or ebpf
+      pattern: "(?s)engine:\\n  kind: modern_ebpf\\n  modern_ebpf:"
+  - notMatchRegex:
+      path: data["falco.yaml"]
+      pattern: "(?s)engine:.*\\n  kmod:"
+  - notMatchRegex:
+      path: data["falco.yaml"]
+      pattern: "(?s)engine:.*\\n  ebpf:"
+- it: enables Falco metrics reporting
+  templates: *configmapTemplate
+  values: *nonLocalValues
+  asserts:
+  - matchRegex:
+      path: data["falco.yaml"]
+      pattern: "(?s)metrics:.*?enabled: true"
