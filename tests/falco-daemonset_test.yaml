@@ -9,7 +9,7 @@ tests:
   - matchSnapshot: {}
   values: &localValues
   - ../values-local.yaml
-- it: zeroes falco container cpu and memory requests and limits on the local cluster
+- it: sets falco cpu requests/limits to 0 and memory requests to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
   asserts:
