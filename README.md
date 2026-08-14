@@ -20,6 +20,18 @@ configuration on top of it through root-level `values*.yaml` files:
 
 Which value files apply to which cluster is controlled centrally by `helm-config.yaml`.
 
+## Repository Structure
+
+| Path                             | Purpose                                                            |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `Chart.yaml` / `Chart.lock`       | Umbrella chart metadata and the pinned `falco` dependency version. |
+| `values-subchart-overrides.yaml`  | Overrides shared by every cluster.                                 |
+| `values-local.yaml`               | Additional overrides for local Kind clusters.                      |
+| `helm-config.yaml`                | Per-environment `apis` and `valueFiles` used during hydration.     |
+| `tests/*_test.yaml`               | helm-unittest suites, one file per rendered resource.              |
+| `.github/workflows/`              | Hydration, helm-unittest, and Trufflehog secret-scan pipelines.     |
+| `scan-helm-capabilities.sh`       | Static analysis tool described under [Dependency Scanning](#dependency-scanning). |
+
 ## Prerequisites
 
 - [Docker](https://www.docker.com/) to run the containerized tooling used throughout this guide.
@@ -30,13 +42,13 @@ Which value files apply to which cluster is controlled centrally by `helm-config
 
 Environments and their rendering configuration are defined in `helm-config.yaml`:
 
-| Environment    | Value Files                                                  |
-| -------------- | ------------------------------------------------------------ |
-| `local`        | `values-subchart-overrides.yaml`, `values-local.yaml`        |
-| `sf-k8s01-dev` | `values-subchart-overrides.yaml`                              |
-| `sf-k8s02-dev` | `values-subchart-overrides.yaml`                              |
-| `sf-k8s03-dev` | `values-subchart-overrides.yaml`                              |
-| `sf-k8s01-prod`| `values-subchart-overrides.yaml`                              |
+| Environment     | Value Files                                            |
+| --------------- | ------------------------------------------------------- |
+| `local`         | `values-subchart-overrides.yaml`, `values-local.yaml`  |
+| `sf-k8s01-dev`  | `values-subchart-overrides.yaml`                       |
+| `sf-k8s02-dev`  | `values-subchart-overrides.yaml`                       |
+| `sf-k8s03-dev`  | `values-subchart-overrides.yaml`                       |
+| `sf-k8s01-prod` | `values-subchart-overrides.yaml`                       |
 
 Add a new environment by adding an entry under `environments` in `helm-config.yaml`. If the
 environment shares behavior with an existing one, reuse the existing YAML anchor instead of
