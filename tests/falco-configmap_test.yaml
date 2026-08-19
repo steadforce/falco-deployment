@@ -4,7 +4,7 @@ release:
 templates: &configmapTemplate
 - charts/falco/templates/configmap.yaml
 values: &nonLocalValues
-- ../values-subchart-overrides.yaml
+- &subchartOverridesValuesFile ../values-subchart-overrides.yaml
 tests:
 - it: enables the modern eBPF driver via the modern-bpf alias
   templates: *configmapTemplate
@@ -27,6 +27,13 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)metrics:.*?enabled: true"
+- it: enables the prometheus metrics webserver endpoint
+  templates: *configmapTemplate
+  values: *nonLocalValues
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
 - it: disables the grpc and grpc_output servers
   templates: *configmapTemplate
   values: *nonLocalValues
@@ -37,3 +44,12 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)grpc_output:.*?enabled: false"
+- it: sets the debug log level for local development
+  templates: *configmapTemplate
+  values:
+  - *subchartOverridesValuesFile
+  - ../values-local.yaml
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?m)^log_level: debug$"
