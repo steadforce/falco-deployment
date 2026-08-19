@@ -1,0 +1,23 @@
+suite: falco ServiceMonitor creation and prometheus label
+release:
+  name: falco
+capabilities:
+  apiVersions:
+  - monitoring.coreos.com/v1
+templates:
+- charts/falco/templates/serviceMonitor.yaml
+values:
+- ../values-subchart-overrides.yaml
+tests:
+- it: creates a ServiceMonitor for all clusters
+  asserts:
+  - hasDocuments:
+      count: 1
+  - equal:
+      path: kind
+      value: ServiceMonitor
+- it: labels the ServiceMonitor for the cluster-monitoring prometheus instance
+  asserts:
+  - equal:
+      path: metadata.labels.prometheus
+      value: cluster-monitoring

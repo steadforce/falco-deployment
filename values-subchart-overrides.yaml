@@ -80,7 +80,7 @@ falco:
             k8s.ns.name = postgres)
   driver:
     kind: modern-bpf
-    modern_bpf:
+    modernEbpf:
       leastPrivileged: false
   falco:
     grpc:

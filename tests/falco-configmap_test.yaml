@@ -1,0 +1,46 @@
+suite: falco application config driven by cluster overrides
+release:
+  name: falco
+templates:
+- charts/falco/templates/configmap.yaml
+values:
+- &subchartOverridesValuesFile ../values-subchart-overrides.yaml
+tests:
+- it: enables the modern eBPF driver via the modern-bpf alias
+  asserts:
+  - matchRegex:
+      path: &falcoYamlPath data["falco.yaml"]
+      # only the modern_ebpf engine block should be rendered, not kmod or ebpf
+      pattern: "(?s)engine:\\n  kind: modern_ebpf\\n  modern_ebpf:"
+  - notMatchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)engine:.*\\n  kmod:"
+  - notMatchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)engine:.*\\n  ebpf:"
+- it: enables falco metrics reporting
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)metrics:.*?enabled: true"
+- it: enables the prometheus metrics webserver endpoint
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
+- it: disables the grpc and grpc_output servers
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)grpc:.*?enabled: false"
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)grpc_output:.*?enabled: false"
+- it: sets the debug log level for local development
+  values:
+  - *subchartOverridesValuesFile
+  - ../values-local.yaml
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?m)^log_level: debug$"

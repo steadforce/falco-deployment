@@ -1,15 +1,15 @@
-suite: test if the resource settings for falco in cluster are correct
+suite: falco daemonset container resources per cluster
 release:
   name: falco
 tests:
-- it: snapshot test for detecting side effects on falco during local development
+- it: matches the local cluster daemonset snapshot
   templates: &daemonsetTemplate
   - charts/falco/templates/daemonset.yaml
   asserts:
   - matchSnapshot: {}
   values: &localValues
   - ../values-local.yaml
-- it: falco container resources for local cluster
+- it: sets falco container cpu requests/limits and memory requests to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
   asserts:
@@ -29,3 +29,21 @@ tests:
       path: &memoryRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
       # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
       pattern: "^0(Ki|Mi|Gi)?$"
+- it: sets non-zero falco container cpu and memory requests and limits on non-local clusters
+  templates: *daemonsetTemplate
+  values:
+  - ../values-subchart-overrides.yaml
+  asserts:
+  - matchRegex:
+      path: *cpuLimitsPath
+      # on non-local clusters we expect a non-zero cpu limit
+      pattern: &nonZeroCpuPattern "^[1-9][0-9]*(m)?$"
+  - matchRegex:
+      path: *memoryLimitsPath
+      pattern: *nonZeroMemoryPattern
+  - matchRegex:
+      path: *cpuRequestsPath
+      pattern: *nonZeroCpuPattern
+  - matchRegex:
+      path: *memoryRequestsPath
+      pattern: *nonZeroMemoryPattern
