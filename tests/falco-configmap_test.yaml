@@ -18,7 +18,7 @@ tests:
   - notMatchRegex:
       path: *falcoYamlPath
       pattern: "(?s)engine:.*\\n  ebpf:"
-- it: enables Falco metrics reporting
+- it: enables falco metrics reporting
   asserts:
   - matchRegex:
       path: *falcoYamlPath

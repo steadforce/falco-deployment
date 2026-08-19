@@ -1,4 +1,4 @@
-suite: k8s metadata collector enablement per cluster
+suite: k8s-metacollector enablement per cluster
 release:
   name: falco
 templates:

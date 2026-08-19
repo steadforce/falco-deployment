@@ -9,7 +9,7 @@ tests:
   - matchSnapshot: {}
   values: &localValues
   - ../values-local.yaml
-- it: sets falco cpu requests/limits to 0 and memory requests to 0 on the local cluster
+- it: sets falco container cpu requests/limits and memory requests to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
   asserts:
@@ -29,7 +29,7 @@ tests:
       path: &memoryRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
       # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
       pattern: "^0(Ki|Mi|Gi)?$"
-- it: sets non-zero falco container cpu and memory requests and limits on non-local clusters (dev and prod)
+- it: sets non-zero falco container cpu and memory requests and limits on non-local clusters
   templates: *daemonsetTemplate
   values:
   - ../values-subchart-overrides.yaml
