@@ -1,5 +1,7 @@
 # Falco Deployment
 
+![Falco logo](https://raw.githubusercontent.com/cncf/artwork/master/projects/falco/horizontal/color/falco-horizontal-color.svg)
+
 Umbrella Helm chart that packages and configures [Falco](https://falco.org/) runtime security
 manifests for our clusters.
 
@@ -63,8 +65,8 @@ The version of the `falco` dependency is pinned in `Chart.yaml`. To bump it:
 
    ```sh
     docker run \
-      --rm \
       -e HOME=/tmp \
+      --rm \
       -u $(id -u) \
       -v "$PWD:/apps" \
       -w /apps \
@@ -120,9 +122,9 @@ dependencies) requires, so `helm-config.yaml` can be kept in sync:
 
 ```sh
  docker run \
+   -e HOME=/tmp \
    --entrypoint /bin/sh \
    --rm \
-   -e HOME=/tmp \
    -u $(id -u) \
    -v "$PWD:/chart" \
    -w /chart \
@@ -143,9 +145,9 @@ suites in `tests/*_test.yaml`, one per rendered resource. Run the full suite wit
 
 ```sh
  docker run \
-   --rm \
    -e HELM_CACHE_HOME=/tmp/helm/.config \
    -e HOME=/tmp \
+   --rm \
    -u $(id -u) \
    -v "$PWD:/apps" \
    -w /apps \
