@@ -50,6 +50,7 @@ Environments and their rendering configuration are defined in `helm-config.yaml`
 | `sf-k8s01-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s02-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s03-dev`  | `values-subchart-overrides.yaml`                       |
+| `sf-k8s04-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s01-prod` | `values-subchart-overrides.yaml`                       |
 
 Add a new environment by adding an entry under `environments` in `helm-config.yaml`. If the
@@ -73,7 +74,12 @@ The version of the `falco` dependency is pinned in `Chart.yaml`. To bump it:
       alpine/helm dependency update
    ```
 
-3. Commit the updated `Chart.yaml`, `Chart.lock`, and the refreshed `charts/` directory together.
+3. Commit the updated `Chart.yaml`.
+
+> [!NOTE]
+> `Chart.lock` and `charts/` are gitignored build artifacts, so only `Chart.yaml` is committed. This also
+> means a stale `charts/` archive is never detected by the test suite — it renders whatever version happens
+> to sit on disk, so refresh it after every `Chart.yaml` change.
 
 See the [Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies) for more details.
 
@@ -141,7 +147,13 @@ The script:
 ## Testing
 
 Chart behavior is covered by [helm-unittest](https://github.com/helm-unittest/helm-unittest)
-suites in `tests/*_test.yaml`, one per rendered resource. Run the full suite with:
+suites in `tests/*_test.yaml`, one per rendered resource. Between them they assert the modern eBPF driver
+selection and the resulting container privileges, the metrics and Prometheus webserver settings, the
+disabled gRPC servers and the absent gRPC `Service`, the debug log level on local versus the default
+elsewhere, the shared and local-only custom rules files, the k8s-metacollector deployment, the
+`ServiceMonitor` and its Prometheus label, and container resources for local versus every other cluster.
+
+Run the full suite with:
 
 ```sh
  docker run \
@@ -153,6 +165,13 @@ suites in `tests/*_test.yaml`, one per rendered resource. Run the full suite wit
    -w /apps \
    helmunittest/helm-unittest .
 ```
+
+Append `-u` to the same command to rewrite the one daemonset snapshot after an intentional change.
+
+> [!NOTE]
+> `tests/__snapshot__/` is gitignored and rebuilt locally. The snapshot catches broad side effects, but it
+> proves nothing on its own — refreshing it silences a regression as easily as it records an intended
+> change. Anything that must not change is covered by a direct assertion instead.
 
 ## Running The GitHub Pipeline Locally
 
@@ -175,6 +194,18 @@ is needed.
 [extra Kind mounts required](https://falco.org/docs/getting-started/third-party/learning/#kind)
 are already added in the
 [SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace).
+
+## Privileged Driver
+
+`values-subchart-overrides.yaml` sets `driver.modernEbpf.leastPrivileged: false`, so the falco container
+runs with `privileged: true` rather than the narrower `BPF`, `SYS_RESOURCE`, `PERFMON` and `SYS_PTRACE`
+capability set.
+
+> [!WARNING]
+> This is a deliberate trade-off, not an oversight: the least-privileged mode restricts what the modern
+> eBPF driver can observe. Flipping it changes the container's privilege level cluster-wide, so treat it as
+> a security decision. `tests/falco-daemonset_test.yaml` asserts the resulting `securityContext` so neither
+> direction changes silently.
 
 ## The Falco Driver
 

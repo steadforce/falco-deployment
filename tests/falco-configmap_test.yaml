@@ -43,4 +43,9 @@ tests:
   asserts:
   - matchRegex:
       path: *falcoYamlPath
-      pattern: "(?m)^log_level: debug$"
+      pattern: &debugLogLevelPattern "(?m)^log_level: debug$"
+- it: keeps the default log level on all other clusters
+  asserts:
+  - notMatchRegex:
+      path: *falcoYamlPath
+      pattern: *debugLogLevelPattern
