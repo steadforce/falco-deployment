@@ -50,6 +50,7 @@ Environments and their rendering configuration are defined in `helm-config.yaml`
 | `sf-k8s01-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s02-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s03-dev`  | `values-subchart-overrides.yaml`                       |
+| `sf-k8s04-dev`  | `values-subchart-overrides.yaml`                       |
 | `sf-k8s01-prod` | `values-subchart-overrides.yaml`                       |
 
 Add a new environment by adding an entry under `environments` in `helm-config.yaml`. If the
