@@ -47,3 +47,16 @@ tests:
   - matchRegex:
       path: *memoryRequestsPath
       pattern: *nonZeroMemoryPattern
+# driver.modernEbpf.leastPrivileged is set to false in values-subchart-overrides.yaml,
+# which is what makes the falco container run fully privileged instead of with the
+# BPF/SYS_RESOURCE/PERFMON/SYS_PTRACE capability set.
+- it: runs the falco container privileged rather than with the least-privileged capability set
+  templates: *daemonsetTemplate
+  values:
+  - ../values-subchart-overrides.yaml
+  asserts:
+  - equal:
+      path: spec.template.spec.containers[?(@.name == "falco")].securityContext.privileged
+      value: true
+  - notExists:
+      path: spec.template.spec.containers[?(@.name == "falco")].securityContext.capabilities
