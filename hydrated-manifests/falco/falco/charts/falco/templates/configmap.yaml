@@ -107,13 +107,13 @@ data:
     - init_config:
         engines:
           bpm:
-            enabled: true
+            enabled: false
           containerd:
-            enabled: true
+            enabled: false
             sockets:
             - /run/host-containerd/containerd.sock
           cri:
-            enabled: true
+            enabled: false
             sockets:
             - /run/containerd/containerd.sock
             - /run/crio/crio.sock
@@ -124,11 +124,11 @@ data:
             sockets:
             - /var/run/docker.sock
           libvirt_lxc:
-            enabled: true
+            enabled: false
           lxc:
-            enabled: true
+            enabled: false
           podman:
-            enabled: true
+            enabled: false
             sockets:
             - /run/podman/podman.sock
         hooks:
