@@ -83,10 +83,6 @@ falco:
     modernEbpf:
       leastPrivileged: false
   falco:
-    grpc:
-      enabled: false
-    grpc_output:
-      enabled: false
     webserver:
       prometheus_metrics_enabled: true
   resources:

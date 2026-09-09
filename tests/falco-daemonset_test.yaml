@@ -32,7 +32,7 @@ tests:
 - it: sets non-zero falco container cpu and memory requests and limits on non-local clusters
   templates: *daemonsetTemplate
   values:
-  - ../values-subchart-overrides.yaml
+  - &subchartOverrides ../values-subchart-overrides.yaml
   asserts:
   - matchRegex:
       path: *cpuLimitsPath
@@ -60,3 +60,13 @@ tests:
       value: true
   - notExists:
       path: spec.template.spec.containers[?(@.name == "falco")].securityContext.capabilities
+- it: lowers the falco memory request on the k8s04-dev cluster
+  templates: *daemonsetTemplate
+  values:
+  - *subchartOverrides
+  - ../values-sf-k8s04-dev.yaml
+  asserts:
+  # the 768Mi request from the subchart overrides does not fit on the OVH nodes
+  - equal:
+      path: *memoryRequestsPath
+      value: 256Mi
