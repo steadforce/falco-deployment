@@ -6,10 +6,10 @@ metadata:
   name: falco
   namespace: falco
   labels:
-    helm.sh/chart: falco-8.0.5
+    helm.sh/chart: falco-9.1.0
     app.kubernetes.io/name: falco
     app.kubernetes.io/instance: falco
-    app.kubernetes.io/version: "0.43.1"
+    app.kubernetes.io/version: "0.44.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
@@ -23,8 +23,8 @@ spec:
         app.kubernetes.io/name: falco
         app.kubernetes.io/instance: falco
       annotations:
-        checksum/config: 641f32956e6b7d3a6084041e248e1705f3c34e5b81e5f661014aa09805417ead
-        checksum/rules: 1cab5d321240883a18494e22b642a30dd5992c70ad0232f9da5a6f1d576c69e2
+        checksum/config: c927000c88375b54c4d9f7a4e1f99ba2dd69a431cfb58edcb2e5ae4fcad4b919
+        checksum/rules: 2718119c4b0d7cfd0c652356eb7ed0c00e4507998e899c515ac9583686f61d40
         checksum/certs: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       serviceAccountName: falco
@@ -35,7 +35,7 @@ spec:
           key: node-role.kubernetes.io/control-plane
       containers:
         - name: falco
-          image: docker.io/falcosecurity/falco:0.43.1
+          image: docker.io/falcosecurity/falco:0.44.1
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -43,7 +43,7 @@ spec:
               memory: 1024Mi
             requests:
               cpu: 200m
-              memory: 768Mi
+              memory: 256Mi
           securityContext:
             privileged: true
           args:
@@ -91,6 +91,16 @@ spec:
           volumeMounts:
             - mountPath: /host/var/run/docker.sock
               name: container-engine-socket-0
+            - mountPath: /host/run/podman/podman.sock
+              name: container-engine-socket-1
+            - mountPath: /host/run/host-containerd/containerd.sock
+              name: container-engine-socket-2
+            - mountPath: /host/run/containerd/containerd.sock
+              name: container-engine-socket-3
+            - mountPath: /host/run/crio/crio.sock
+              name: container-engine-socket-4
+            - mountPath: /host/run/k3s/containerd/containerd.sock
+              name: container-engine-socket-5
             - mountPath: /etc/falco
               name: rulesfiles-install-dir
             - mountPath: /usr/share/falco/plugins
@@ -111,7 +121,7 @@ spec:
             - mountPath: /etc/falco/rules.d
               name: rules-volume
         - name: falcoctl-artifact-follow
-          image: docker.io/falcosecurity/falcoctl:0.12.2
+          image: docker.io/falcosecurity/falcoctl:0.13.0
           imagePullPolicy: IfNotPresent
           args:
             - artifact
@@ -129,7 +139,7 @@ spec:
               name: artifact-state-dir
       initContainers:
         - name: falcoctl-artifact-install
-          image: docker.io/falcosecurity/falcoctl:0.12.2
+          image: docker.io/falcosecurity/falcoctl:0.13.0
           imagePullPolicy: IfNotPresent
           args:
             - artifact
@@ -149,6 +159,21 @@ spec:
         - hostPath:
             path: /var/run/docker.sock
           name: container-engine-socket-0
+        - hostPath:
+            path: /run/podman/podman.sock
+          name: container-engine-socket-1
+        - hostPath:
+            path: /run/host-containerd/containerd.sock
+          name: container-engine-socket-2
+        - hostPath:
+            path: /run/containerd/containerd.sock
+          name: container-engine-socket-3
+        - hostPath:
+            path: /run/crio/crio.sock
+          name: container-engine-socket-4
+        - hostPath:
+            path: /run/k3s/containerd/containerd.sock
+          name: container-engine-socket-5
         - name: plugins-install-dir
           emptyDir: {}
         - name: rulesfiles-install-dir
