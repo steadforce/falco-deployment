@@ -1,19 +1,4 @@
 falco:
-  collectors:
-    # Nodes only run Docker; disable the other engines so the container plugin doesn't probe
-    # foreign/stale sockets (e.g. host containerd via CRI), which crashes with a nil-pointer
-    # panic in the plugin's CRI engine (ctrToInfo, see falcosecurity/plugins issues).
-    containerEngine:
-      engines:
-        podman:
-          enabled: false
-        containerd:
-          enabled: false
-        cri:
-          enabled: false
-        lxc:
-          enabled: false
-        libvirt_lxc:
-          enabled: false
-        bpm:
-          enabled: false
+  resources:
+    requests:
+      memory: 256Mi

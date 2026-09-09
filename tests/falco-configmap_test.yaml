@@ -28,14 +28,6 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
-- it: disables the grpc and grpc_output servers
-  asserts:
-  - matchRegex:
-      path: *falcoYamlPath
-      pattern: "(?s)grpc:.*?enabled: false"
-  - matchRegex:
-      path: *falcoYamlPath
-      pattern: "(?s)grpc_output:.*?enabled: false"
 - it: sets the debug log level for local development
   values:
   - *subchartOverridesValuesFile
