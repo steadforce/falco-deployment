@@ -35,7 +35,6 @@
     {
       "description": "Require manual merge for falco chart major/minor bumps, each in its own PR; patch keeps automerging.",
       "automerge": false,
-      "separateMajorMinor": true,
       "matchManagers": [
         "helmv3"
       ],
