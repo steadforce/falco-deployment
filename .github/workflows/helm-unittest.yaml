@@ -13,3 +13,4 @@ jobs:
     uses: steadforce/steadops-workflows/.github/workflows/helm-unittest.yaml@v4.2.0
     secrets:
       steadops-helm-renovation-ms-teams-webhook: ${{ secrets.STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK }}
+      steadops-helm-renovation-ms-teams-error-webhook: ${{ secrets.STEADOPS_HELM_RENOVATION_ERROR_MS_TEAMS_WEBHOOK }}
