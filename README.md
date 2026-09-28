@@ -231,6 +231,10 @@ This repository implements a GitOps hydration pattern. For each environment in `
 `Chart.lock`. It then opens a pull request against the long-lived `environments/<environment>` branch, which
 ArgoCD deploys from. Patch releases share one branch per environment (the patch segment becomes `x`).
 
+The pull requests carry the labels `hydration`, `automated pr`, and `env: <environment>`. The caller grants
+`issues: write` so that the workflow can create each `env: <environment>` label with a fixed colour before its
+first use; without it, the label is still applied, but GitHub picks a random colour and the workflow warns.
+
 Because hydration runs without access to a live cluster, it mocks the cluster's available APIs through the
 per-environment `apis` list in `helm-config.yaml`.
 
@@ -266,9 +270,13 @@ Or with Docker, using the workbench image:
 `helm-unittest.yaml` runs the test suites, publishes the JUnit results, and lints the chart. On branches starting
 with `renovate/`, it also posts the result to MS Teams:
 
-- Successes go to the webhook in the `STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK` secret.
-- Failures go to the webhook in the `STEADOPS_HELM_RENOVATION_ERROR_MS_TEAMS_WEBHOOK` secret, or to the regular
-  webhook when the error secret is not set.
+- Successes go to the webhook in the `STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK` secret, passed to the reusable
+  workflow as `steadops-helm-renovation-ms-teams-webhook`.
+- Failures go to the webhook in the `STEADOPS_HELM_RENOVATION_ERROR_MS_TEAMS_WEBHOOK` secret, passed as
+  `steadops-helm-renovation-ms-teams-error-webhook`, so broken Renovate updates land in a separate channel. When
+  the error secret is not set, failures fall back to the regular webhook.
+
+Both secrets are optional. When neither is set, no notification is sent.
 
 ### Running The Pipeline Locally
 
