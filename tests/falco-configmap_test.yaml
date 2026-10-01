@@ -29,7 +29,7 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
-- it: sets the debug log level for local development
+- it: sets the debug log level on local development
   values:
   - *subchartOverridesValuesFile
   - ../values-local.yaml

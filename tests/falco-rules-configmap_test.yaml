@@ -4,7 +4,7 @@ release:
 templates:
 - charts/falco/templates/rules-configmap.yaml
 tests:
-- it: renders the shared custom rules file for all clusters
+- it: renders only the shared custom rules file on non-local clusters
   values:
   - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
   asserts:

@@ -17,7 +17,7 @@ tests:
   - *subchartOverrides
   asserts:
   - matchSnapshot: {}
-- it: sets falco container cpu requests/limits and memory requests to 0 on the local cluster
+- it: sets falco container cpu and memory requests and the cpu limit to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
   asserts:
@@ -68,7 +68,7 @@ tests:
       value: true
   - notExists:
       path: spec.template.spec.containers[?(@.name == "falco")].securityContext.capabilities
-- it: lowers the falco memory request on the k8s04-dev cluster
+- it: lowers the falco container memory request to 256Mi on the sf-k8s04-dev cluster
   templates: *daemonsetTemplate
   values:
   - *subchartOverrides
