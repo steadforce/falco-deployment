@@ -7,8 +7,16 @@ tests:
   - charts/falco/templates/daemonset.yaml
   asserts:
   - matchSnapshot: {}
+  # layered like the local hydration environment
   values: &localValues
+  - &subchartOverrides ../values-subchart-overrides.yaml
   - ../values-local.yaml
+- it: matches the shared cluster daemonset snapshot
+  templates: *daemonsetTemplate
+  values:
+  - *subchartOverrides
+  asserts:
+  - matchSnapshot: {}
 - it: sets falco container cpu requests/limits and memory requests to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
@@ -32,7 +40,7 @@ tests:
 - it: sets non-zero falco container cpu and memory requests and limits on non-local clusters
   templates: *daemonsetTemplate
   values:
-  - &subchartOverrides ../values-subchart-overrides.yaml
+  - *subchartOverrides
   asserts:
   - matchRegex:
       path: *cpuLimitsPath

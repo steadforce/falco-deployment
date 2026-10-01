@@ -5,11 +5,13 @@ capabilities:
   apiVersions:
   - monitoring.coreos.com/v1
 templates:
-- charts/falco/templates/serviceMonitor.yaml
+- &serviceMonitorTemplate charts/falco/templates/serviceMonitor.yaml
+- &metricsServiceTemplate charts/falco/templates/service.yaml
 values:
 - ../values-subchart-overrides.yaml
 tests:
 - it: creates a ServiceMonitor for all clusters
+  templates: [*serviceMonitorTemplate]
   asserts:
   - hasDocuments:
       count: 1
@@ -17,7 +19,20 @@ tests:
       path: kind
       value: ServiceMonitor
 - it: labels the ServiceMonitor for the cluster-monitoring prometheus instance
+  templates: [*serviceMonitorTemplate]
   asserts:
   - equal:
       path: metadata.labels.prometheus
       value: cluster-monitoring
+# metrics.enabled in values-subchart-overrides.yaml renders the metrics Service the
+# ServiceMonitor selects via the type=falco-metrics label
+- it: renders the falco metrics Service selected by the ServiceMonitor
+  templates: [*metricsServiceTemplate]
+  asserts:
+  - hasDocuments:
+      count: 1
+  - equal:
+      path: metadata.labels.type
+      value: falco-metrics
+  - exists:
+      path: spec.ports[?(@.name == "metrics")]
