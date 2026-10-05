@@ -169,15 +169,32 @@ Chart behavior is covered by [helm-unittest](https://github.com/helm-unittest/he
 `tests/*_test.yaml`. They assert:
 
 - the modern eBPF driver and the resulting privileged falco container,
-- Falco metrics and the Prometheus metrics webserver endpoint,
+- Falco metrics, the Prometheus metrics webserver endpoint, and the metrics `Service`,
 - the debug log level on `local` and the default level elsewhere,
 - the shared and the local-only custom rules files,
-- the k8s-metacollector deployment,
+- the k8s-metacollector deployment, and the `k8smeta` plugin that falco loads and falcoctl installs for it,
 - the `ServiceMonitor` and its `prometheus: cluster-monitoring` label,
 - falco container resources on `local`, on `sf-k8s04-dev`, and on every other cluster,
-- a snapshot of the local daemonset.
+- snapshots of the daemonset on `local` and on the shared clusters.
 
-The tests render the subchart from `charts/`, so run [Setup](#setup) first, then:
+The tests render the subchart from `charts/`, so run [Setup](#setup) first.
+
+In the workbench:
+
+```sh
+ helm unittest .
+```
+
+The workbench image does not ship the helm-unittest plugin. The command works because the workbench mounts your
+`$HOME`, so a plugin installed in your host's Helm home is available. Install it once with:
+
+```sh
+ helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest.git
+```
+
+Helm 4 needs `--verify=false` for this unsigned plugin, as the pipeline does.
+
+With Docker:
 
 ```sh
  docker run \
@@ -189,8 +206,9 @@ The tests render the subchart from `charts/`, so run [Setup](#setup) first, then
    helmunittest/helm-unittest .
 ```
 
-Append `-u` after the image name to rewrite the daemonset snapshot after an intentional change. To write the
-results the way CI does, append `-t JUnit -o test-output.xml`; without `-t`, helm-unittest writes XUnit.
+Append `-u` (after `.` in the workbench, after the image name with Docker) to rewrite the daemonset snapshots after
+an intentional change. To write the results the way CI does, append `-t JUnit -o test-output.xml`; without `-t`,
+helm-unittest writes XUnit.
 
 > [!NOTE]
 > `tests/__snapshot__/` is gitignored and rebuilt locally. The snapshot catches broad side effects, but it
@@ -218,7 +236,7 @@ All workflows call reusable workflows from
 | --------------------- | --------------------------------- | ---------------------------------------------------- |
 | `helm-hydration.yaml` | Push to `main`                    | Render manifests and open one PR per environment.    |
 | `helm-unittest.yaml`  | Every push                        | Run helm-unittest and `helm lint`, notify MS Teams.  |
-| `trufflehog.yaml`     | Push and pull request to `main`   | Scan the pushed commit range for leaked secrets.     |
+| `trufflehog.yaml`     | Push and PR to `main`, manual     | Scan the pushed commit range for leaked secrets.     |
 
 Both Helm workflows register the HTTP(S) repositories from `Chart.yaml` and run `helm dependency build`, so the
 versions in the committed `Chart.lock` are what gets tested and hydrated.
