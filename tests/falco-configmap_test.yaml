@@ -5,7 +5,7 @@ release:
 templates:
 - charts/falco/templates/configmap.yaml
 values:
-- &subchartOverridesValuesFile ../values-subchart-overrides.yaml
+- &subchartOverrideValuesFile ../values-subchart-overrides.yaml
 tests:
 - it: enables the modern eBPF driver via the modern-bpf alias
   asserts:
@@ -31,7 +31,7 @@ tests:
       pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
 - it: sets the debug log level on local development
   values:
-  - *subchartOverridesValuesFile
+  - *subchartOverrideValuesFile
   - ../values-local.yaml
   asserts:
   - matchRegex:
