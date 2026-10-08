@@ -6,15 +6,45 @@ templates:
 tests:
 - it: renders the shared custom rules file for all clusters
   values:
-  - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
+  - &subchartOverrideValues ../values-subchart-overrides.yaml
   asserts:
   - exists:
       path: &sharedCustomRulesPath data["customized-rules.yaml"]
   - notExists:
       path: &localCustomRulesPath data["customized-local-rules.yaml"]
+- it: scopes the Postgres API exception to HTTPS without hard-coding a cluster IP
+  values:
+  - *subchartOverrideValues
+  asserts:
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)k8s\.pod\.name contains "standby-prod-moodle-postgres-cluster" and\s+fd\.rport = 443'
+  - notMatchRegex:
+      path: *sharedCustomRulesPath
+      pattern: 'fd\.rip = "10\.43\.0\.1"'
+- it: limits sensitive PAM file reads to rkhunter
+  values:
+  - *subchartOverrideValues
+  asserts:
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)proc\.name = "rkhunter" and\s+fd\.name startswith "/etc/pam\.d/"'
+  - notMatchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '\(fd\.name startswith "/etc/pam\.d/"\)'
+- it: matches the Postgres parent for restore and wal-g shell commands
+  values:
+  - *subchartOverrideValues
+  asserts:
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)proc\.pname = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env".*?proc\.cmdline contains "/scripts/restore_command\.sh"'
+  - notMatchRegex:
+      path: *sharedCustomRulesPath
+      pattern: 'proc\.name = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env"'
 - it: additionally renders the local-only custom rules file on local development
   values:
-  - *subchartOverrideValuesFile
+  - *subchartOverrideValues
   - ../values-local.yaml
   asserts:
   - exists:
