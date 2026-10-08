@@ -38,7 +38,13 @@ tests:
   asserts:
   - matchRegex:
       path: *sharedCustomRulesPath
-      pattern: '(?s)proc\.pname = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env".*?proc\.cmdline contains "/scripts/restore_command\.sh"'
+      pattern: '(?s)proc\.pname = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env" and\s+k8s\.ns\.name = "postgres" and\s+\(\s+proc\.cmdline contains "/scripts/restore_command\.sh"'
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)proc\.pname = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env" and\s+k8s\.ns\.name = "postgres" and\s+\(.*?proc\.cmdline contains "wal-g wal-push"\s+\)'
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)proc\.pname = "postgres" and\s+k8s\.pod\.name contains "standby-prod-moodle-postgres-cluster" and\s+k8s\.ns\.name = "postgres" and\s+evt\.type = execve'
   - notMatchRegex:
       path: *sharedCustomRulesPath
       pattern: 'proc\.name = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env"'
