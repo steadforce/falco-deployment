@@ -24,4 +24,5 @@ environments:
     valueFiles:
     - values-subchart-overrides.yaml
     - values-sf-k8s04-dev.yaml
+  sf-k8s05-dev: *environment
   sf-k8s01-prod: *environment
