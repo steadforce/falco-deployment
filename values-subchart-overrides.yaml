@@ -110,7 +110,9 @@ falco:
 
       - macro: allowed_clear_log_files
         condition: >
-          (proc.name in ("rkhunter", "cp", "sh") and
+          ((proc.name = "rkhunter" or
+            (proc.name in ("cp", "sh") and
+             (proc.pname = "rkhunter" or proc.aname[2] = "rkhunter"))) and
           (fd.name startswith "/var/log/rkhunter" or
             fd.name startswith "/var/log/dpkg.log" or
             fd.name contains "/usr/sbin/cron" or

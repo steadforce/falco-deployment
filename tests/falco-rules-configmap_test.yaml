@@ -48,6 +48,16 @@ tests:
   - notMatchRegex:
       path: *sharedCustomRulesPath
       pattern: 'proc\.name = "postgres" and\s+proc\.cmdline contains "wal-e\.d/env"'
+- it: limits clear-log helper processes to rkhunter ancestry
+  values:
+  - *subchartOverrideValues
+  asserts:
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: '(?s)\(proc\.name = "rkhunter" or\s+\(proc\.name in \("cp", "sh"\) and\s+\(proc\.pname = "rkhunter" or proc\.aname\[2\] = "rkhunter"\)\)\) and\s+\(fd\.name startswith "/var/log/rkhunter"'
+  - notMatchRegex:
+      path: *sharedCustomRulesPath
+      pattern: 'proc\.name in \("rkhunter", "cp", "sh"\)'
 - it: additionally renders the local-only custom rules file on local development
   values:
   - *subchartOverrideValues
