@@ -73,6 +73,7 @@ All commands run from the repository root.
 | `sf-k8s02-dev`  | `values-subchart-overrides.yaml`                             |
 | `sf-k8s03-dev`  | `values-subchart-overrides.yaml`                             |
 | `sf-k8s04-dev`  | `values-subchart-overrides.yaml`, `values-sf-k8s04-dev.yaml` |
+| `sf-k8s05-dev`  | `values-subchart-overrides.yaml`                             |
 | `sf-k8s01-prod` | `values-subchart-overrides.yaml`                             |
 
 All environments share the same `apis` list. To add an environment, add an entry under `environments`. If it
