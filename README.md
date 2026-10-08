@@ -1,117 +1,373 @@
-# Falco
-Repository containing manifests for falco installation. Never install the content of 
-this repo on our clusters manually. This is all done by argocd.
-## Dependencies
-This chart pulls in `falco` as a dependency. The version
-used is specified in `Chart.yaml` in the `dependencies` section.
-If you change the version in there, you need to then run
+# Falco Deployment
 
-    $ helm dependency update
+![Falco logo](https://raw.githubusercontent.com/cncf/artwork/master/projects/falco/horizontal/color/falco-horizontal-color.svg)
 
-in order to have the chart downloaded to the `charts` directory
-and then also commit that new version alongside with the altered
-`Chart.yaml` file.
+Umbrella Helm chart that packages and configures [Falco](https://falco.org/) runtime security for our clusters.
 
-See the [Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies)
-for details.
-## Falco in Kind cluster
-Falco needs kernel access. If Falco runs inside a Kind cluster additional configuration 
-to the cluster is needed.
+> [!IMPORTANT]
+> Never install the content of this repository on a cluster manually. Manifests are rendered by the
+> [hydration workflow](#hydration) and applied exclusively by ArgoCD.
 
-### Configuration
-`/dev` and `/var/run/docker.sock` have to be available for Falco. The configuration as extra mounts 
-can be found [here](https://falco.org/docs/getting-started/third-party/learning/#kind).
-These extra mounts are added in the [Steadies Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace).
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Repository Layout](#repository-layout)
+- [Environments](#environments)
+- [Setup](#setup)
+- [Rendering](#rendering)
+- [Testing](#testing)
+- [CI/CD](#cicd)
+- [Dependency Updates](#dependency-updates)
+- [Falco Specifics](#falco-specifics)
+- [Troubleshooting](#troubleshooting)
 
-## The Falco driver
-Right now Falco is configured to [download](https://download.falco.org/) 
-a prebuilt driver based on the information it can acquire about the host operating system. 
-WSL is not supported and may require a [custom kernel](https://falco.org/blog/falco-wsl2-custom-kernel/).
-More information can be found on the [github page](https://github.com/falcosecurity/charts/tree/master/falco#about-drivers).
+## Overview
 
-## Possible Problems
-### Trying to download a prebuilt falco module from ... curl: (22) The requested URL returned error: 404  
-Sometimes the prebuilt module isn't available (yet). Falco can't download the needed module and isn't able to run.
-The name of the module Falco tries to download should be visible in the logs.
-You can look up the existence of a prebuilt kernel module [here](https://download.falco.org/driver/site/index.html?lib=3.0.1%2Bdriver&target=all&arch=all&kind=all). 
-Which version Falco tries to download depends on the installed **kernel versions** and **operating system** on your **host**.  
-If you recently updated your host operating system you can try to boot with an older kernel version.
+`Chart.yaml` declares the upstream [`falco`](https://github.com/falcosecurity/charts/tree/master/charts/falco) chart
+from `https://falcosecurity.github.io/charts` as its only dependency, and `Chart.lock` pins the exact resolved
+version. The umbrella chart has no templates of its own and its `values.yaml` is empty; all configuration is
+layered on top of the subchart through root-level value files:
 
-### Error: error opening device /host/dev/falco0
-Falco needs `/dev` and `/var/run/docker.sock` available in the Kind cluster. 
-Try to pull the new version of the [Steadies Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace).
-Remove your existing local cluster and initialize it again. The error should be fixed.
+- `values-subchart-overrides.yaml` — shared overrides for every cluster: custom rules, the Kubernetes
+  metadata collector, the modern eBPF driver, Prometheus metrics, a `ServiceMonitor`, and resource requests.
+- `values-local.yaml` — additional overrides for local Kind clusters: debug logging, local-only rules, and
+  zero CPU and memory requests.
+- `values-sf-k8s04-dev.yaml` — additional override for `sf-k8s04-dev`, lowering the falco memory request.
 
-### Error: Could not create inotify handler or Error: Too many files open
+Which value files apply to which cluster is controlled centrally by `helm-config.yaml`.
 
-Should only be a [Kind](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files) related problem. 
-Use the following to fix the error.
+## Prerequisites
+
+- [Docker](https://www.docker.com/) for the containerized commands in this guide.
+- Optionally, the [SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace)
+  workbench. It ships `helm`, `yq`, `kubectl`, `hetzner-k3s`, and `act`, so the workbench commands below run
+  directly from its shell without a `docker run` wrapper.
+
+All commands run from the repository root.
+
+## Repository Layout
+
+| Path                             | Purpose                                                              |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `Chart.yaml`                     | Umbrella chart metadata and the `falco` dependency constraint.       |
+| `Chart.lock`                     | Pinned `falco` version and digest; committed.                        |
+| `values.yaml`                    | Umbrella chart defaults; intentionally empty.                        |
+| `values-subchart-overrides.yaml` | Overrides shared by every cluster.                                   |
+| `values-local.yaml`              | Additional overrides for local Kind clusters.                        |
+| `values-sf-k8s04-dev.yaml`       | Additional overrides for `sf-k8s04-dev`.                             |
+| `helm-config.yaml`               | Release name, namespace, and per-environment `apis` and `valueFiles`. |
+| `tests/*_test.yaml`              | helm-unittest suites, one file per rendered resource.                |
+| `scan-helm-capabilities.sh`      | Lists the API capabilities the chart checks for.                     |
+| `.github/workflows/`             | Hydration, helm-unittest, and Trufflehog pipelines.                  |
+| `README_WSL.md`                  | Running Falco on WSL with a custom kernel.                           |
+
+`charts/`, `tests/__snapshot__/`, and `_local/` are gitignored and created locally.
+
+## Environments
+
+`helm-config.yaml` sets the release name and namespace (both `falco`) and defines one entry per environment:
+
+| Environment     | Value Files                                                  |
+| --------------- | ------------------------------------------------------------ |
+| `local`         | `values-subchart-overrides.yaml`, `values-local.yaml`        |
+| `sf-k8s01-dev`  | `values-subchart-overrides.yaml`                             |
+| `sf-k8s02-dev`  | `values-subchart-overrides.yaml`                             |
+| `sf-k8s03-dev`  | `values-subchart-overrides.yaml`                             |
+| `sf-k8s04-dev`  | `values-subchart-overrides.yaml`, `values-sf-k8s04-dev.yaml` |
+| `sf-k8s01-prod` | `values-subchart-overrides.yaml`                             |
+
+All environments share the same `apis` list. To add an environment, add an entry under `environments`. If it
+behaves like an existing one, reuse that entry's YAML anchor (for example `*environment`) instead of duplicating
+the `apis` and `valueFiles` lists.
+
+## Setup
+
+Download the subchart pinned in `Chart.lock` into `charts/` after cloning and after every pull that changes
+`Chart.lock`. `helm dependency build` resolves repositories by name, so the steps below first register every
+HTTP(S) repository from `Chart.yaml`, the same way the pipeline does.
+
+In the workbench:
+
+```sh
+ yq 'explode(.) | .dependencies[] | select(.repository == "http*") | .name + " " + .repository' Chart.yaml |
+   while read -r name repo; do helm repo add --force-update "$name" "$repo"; done
+ helm dependency build .
 ```
-sudo sysctl fs.inotify.max_user_watches=524288
-sudo sysctl fs.inotify.max_user_instances=512
-```
-Persist the setting across reboots by adding it to /etc/sysctl.conf.
 
-```
-echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf
-echo "fs.inotify.max_user_instances = 512" | sudo tee -a /etc/sysctl.conf
+With Docker, `alpine/helm` ships `yq`, so both steps run in one container:
+
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --entrypoint sh \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm -c '
+     yq "explode(.) | .dependencies[] | select(.repository == \"http*\") | .name + \" \" + .repository" Chart.yaml |
+       while read -r name repo; do helm repo add --force-update "$name" "$repo"; done &&
+     helm dependency build .
+   '
 ```
 
-## Render all manifests locally
+## Rendering
 
-```shell
- helm dependency update && \
- for cluster in $(yq '.environments | keys[]' helm-config.yaml); do
-    helm template \
-      -a "$(cluster=$cluster yq '.environments.[env(cluster)].apis | @csv' helm-config.yaml)" \
-      -f "$(cluster=$cluster yq '.environments.[env(cluster)].valueFiles | @csv' helm-config.yaml)" \
-      -n "$(yq 'explode(.) | .namespace // ""' helm-config.yaml)" \
-      --output-dir _local/$cluster \
-      --include-crds \
-      --release-name "$(yq 'explode(.) | .releaseName // ""' helm-config.yaml)" \
-      --skip-tests \
-      .
+Render every environment from `helm-config.yaml` with the same `helm template` flags the hydration workflow uses.
+Manifests are written to `_local/<environment>/falco/`. Run [Setup](#setup) first.
+
+In the workbench:
+
+```sh
+ for environment in $(yq '.environments | keys[]' helm-config.yaml); do
+   export environment
+   helm template \
+     -a "$(yq 'explode(.) | .environments.[env(environment)].apis | @csv' helm-config.yaml)" \
+     -f "$(yq 'explode(.) | .environments.[env(environment)].valueFiles | @csv' helm-config.yaml)" \
+     --include-crds \
+     -n "$(yq 'explode(.) | .namespace' helm-config.yaml)" \
+     --output-dir "_local/$environment" \
+     --release-name \
+     --skip-tests \
+     "$(yq 'explode(.) | .releaseName' helm-config.yaml)" \
+     .
  done
 ```
 
-## Run GitHub pipeline locally
+With Docker:
 
-To run the GitHub pipeline in the local environment, start the workbench, cd into the folder containing this
-`README.md` and execute the following command:
-
-```shell
-  act
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --entrypoint sh \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm -c '
+     for environment in $(yq ".environments | keys[]" helm-config.yaml); do
+       export environment
+       helm template \
+         -a "$(yq "explode(.) | .environments.[env(environment)].apis | @csv" helm-config.yaml)" \
+         -f "$(yq "explode(.) | .environments.[env(environment)].valueFiles | @csv" helm-config.yaml)" \
+         --include-crds \
+         -n "$(yq "explode(.) | .namespace" helm-config.yaml)" \
+         --output-dir "_local/$environment" \
+         --release-name \
+         --skip-tests \
+         "$(yq "explode(.) | .releaseName" helm-config.yaml)" \
+         . || exit 1
+     done
+   '
 ```
 
-On first execution, you're asked which flavour of the act image should be used. Using the default `medium`
-is a good starting point.
+`--release-name` is a boolean flag that adds the release name to the output path; the release name itself is the
+first positional argument.
 
-## Hydration Workflow
+## Testing
 
-This repository implements a **GitOps Hydration Pattern**.
-The `helm-hydration.yaml` workflow is triggered by pushes to the `main` branch. It renders the Helm charts into static Kubernetes manifests and opens automated Pull Requests targeting the specific environment branches (e.g., `environments/local`, `environments/sf-k8s01-prod`) defined in `helm-config.yaml`.
+Chart behavior is covered by [helm-unittest](https://github.com/helm-unittest/helm-unittest) suites in
+`tests/*_test.yaml`. They assert:
 
-### API Capabilities Configuration
-Because the hydration process runs in a CI environment without access to a live Kubernetes cluster, it must **mock** the cluster's available APIs (CRDs). This is controlled via the `apis` list in `helm-config.yaml`.
+- the modern eBPF driver and the resulting privileged falco container,
+- Falco metrics and the Prometheus metrics webserver endpoint,
+- the debug log level on `local` and the default level elsewhere,
+- the shared and the local-only custom rules files,
+- the k8s-metacollector deployment,
+- the `ServiceMonitor` and its `prometheus: cluster-monitoring` label,
+- falco container resources on `local`, on `sf-k8s04-dev`, and on every other cluster,
+- a snapshot of the local daemonset.
 
-If a chart (or its dependencies) uses conditional logic like `if .Capabilities.APIVersions.Has "..."`, and the specific API is missing from `helm-config.yaml`, the resource will **not** be rendered in the final manifest.
+The tests render the subchart from `charts/`, so run [Setup](#setup) first, then:
 
-### Dependency Scanning
-To ensure all conditional resources are correctly rendered, use the provided static analysis tool:
-
-```bash
-./scan-helm-capabilities.sh
+```sh
+ docker run \
+   -e HELM_CACHE_HOME=/tmp/helm/.config \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   helmunittest/helm-unittest .
 ```
 
-> **Note:** The script requires `helm` to be available in your `PATH`. Since `helm` is not installed locally, run it via Docker:
-> ```bash
-> docker run --rm -u $(id -u) -v "$PWD:/chart" -w /chart \
->   --entrypoint /bin/sh alpine/helm \
->   -c 'apk add --no-cache bash grep > /dev/null 2>&1 && bash scan-helm-capabilities.sh'
-> ```
+Append `-u` after the image name to rewrite the daemonset snapshot after an intentional change. To write the
+results the way CI does, append `-t JUnit -o test-output.xml`; without `-t`, helm-unittest writes XUnit.
 
-This script:
-1.  Downloads and extracts all chart dependencies locally.
-2.  Recursively scans all templates (`.yaml`, `.yml`, `.tpl`) in your chart and its sub-charts.
-3.  Identifies every instance of `.Capabilities.APIVersions.Has`.
-4.  Outputs the exact list of API strings (Groups and Kinds) required in your `helm-config.yaml`.
+> [!NOTE]
+> `tests/__snapshot__/` is gitignored and rebuilt locally. The snapshot catches broad side effects, but it
+> proves nothing on its own: refreshing it silences a regression as easily as it records an intended change.
+> Anything that must not change is covered by a direct assertion instead.
+
+CI also lints the chart:
+
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm lint .
+```
+
+## CI/CD
+
+All workflows call reusable workflows from
+[steadforce/steadops-workflows](https://github.com/steadforce/steadops-workflows), pinned to `v4.2.0`.
+
+| Workflow              | Trigger                           | Purpose                                              |
+| --------------------- | --------------------------------- | ---------------------------------------------------- |
+| `helm-hydration.yaml` | Push to `main`                    | Render manifests and open one PR per environment.    |
+| `helm-unittest.yaml`  | Every push                        | Run helm-unittest and `helm lint`, notify MS Teams.  |
+| `trufflehog.yaml`     | Push and pull request to `main`   | Scan the pushed commit range for leaked secrets.     |
+
+Both Helm workflows register the HTTP(S) repositories from `Chart.yaml` and run `helm dependency build`, so the
+versions in the committed `Chart.lock` are what gets tested and hydrated.
+
+### Hydration
+
+This repository implements a GitOps hydration pattern. For each environment in `helm-config.yaml`,
+`helm-hydration.yaml` renders the chart into static manifests and commits them to a
+`hydration-pull-request/<environment>-<version>` branch, where `<version>` is the `falco` version from
+`Chart.lock`. It then opens a pull request against the long-lived `environments/<environment>` branch, which
+ArgoCD deploys from. Patch releases share one branch per environment (the patch segment becomes `x`).
+
+The pull requests carry the labels `hydration`, `automated pr`, and `env: <environment>`. The caller grants
+`issues: write` so that the workflow can create each `env: <environment>` label with a fixed colour before its
+first use; without it, the label is still applied, but GitHub picks a random colour and the workflow warns.
+
+Because hydration runs without access to a live cluster, it mocks the cluster's available APIs through the
+per-environment `apis` list in `helm-config.yaml`.
+
+> [!WARNING]
+> If a template uses conditional logic such as `if .Capabilities.APIVersions.Has "..."` and the required API is
+> missing from `helm-config.yaml`, that resource is silently **not** rendered.
+
+To find every API capability the chart and its subcharts check for, run `scan-helm-capabilities.sh`. It copies
+the chart to a temporary directory, downloads and extracts all dependencies there, scans all `.yaml`, `.yml`,
+and `.tpl` templates for `.Capabilities.APIVersions.Has`, and prints the API strings as a list for
+`helm-config.yaml`. The script needs GNU `grep`, which the busybox-based `alpine/helm` image lacks, so run it in
+the workbench:
+
+```sh
+ bash scan-helm-capabilities.sh
+```
+
+Or with Docker, using the workbench image:
+
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --entrypoint bash \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   ghcr.io/steadforce/steadops/workbenches/k8s:main scan-helm-capabilities.sh
+```
+
+### Unit Tests And Notifications
+
+`helm-unittest.yaml` runs the test suites, publishes the JUnit results, and lints the chart. On branches starting
+with `renovate/`, it also posts the result to MS Teams:
+
+- Successes go to the webhook in the `STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK` secret, passed to the reusable
+  workflow as `steadops-helm-renovation-ms-teams-webhook`.
+- Failures go to the webhook in the `STEADOPS_HELM_RENOVATION_ERROR_MS_TEAMS_WEBHOOK` secret, passed as
+  `steadops-helm-renovation-ms-teams-error-webhook`, so broken Renovate updates land in a separate channel. When
+  the error secret is not set, failures fall back to the regular webhook.
+
+Both secrets are optional. When neither is set, no notification is sent.
+
+### Running The Pipeline Locally
+
+To run the GitHub Actions pipeline locally, start the workbench and run from the repository root:
+
+```sh
+ act
+```
+
+On first execution, `act` asks which flavor of its runner image to use; the default `medium` image is a good
+starting point. Test result publishing and MS Teams notifications are skipped under `act`.
+
+## Dependency Updates
+
+[Renovate](https://docs.renovatebot.com/) keeps dependencies current, as configured in `renovate.json`:
+
+- Minor and patch updates are merged automatically (squash).
+- GitHub Actions and reusable workflow updates, including major and digest updates, are merged automatically.
+- `falco` chart major and minor updates require a manual merge; `falco` patch updates are merged automatically.
+
+To change the `falco` dependency by hand, edit its `version` in `Chart.yaml`, then regenerate `Chart.lock`:
+
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm dependency update .
+```
+
+Commit the new `Chart.lock` together with `Chart.yaml`, so that CI tests and hydrates the same version. See the
+[Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies) for details.
+
+## Falco Specifics
+
+### Privileged Driver
+
+`values-subchart-overrides.yaml` sets `driver.kind: modern-bpf` and `driver.modernEbpf.leastPrivileged: false`,
+so the falco container runs with `privileged: true` rather than with the narrower `BPF`, `SYS_RESOURCE`,
+`PERFMON`, and `SYS_PTRACE` capability set.
+
+> [!WARNING]
+> This is a deliberate trade-off, not an oversight: the least-privileged mode restricts what the modern eBPF
+> driver can observe. Flipping it changes the container's privilege level cluster-wide, so treat it as a
+> security decision. `tests/falco-daemonset_test.yaml` asserts the resulting `securityContext`, so neither
+> direction changes silently.
+
+### Drivers And WSL
+
+Falco [downloads](https://download.falco.org/) a prebuilt driver for the host operating system it detects. WSL is
+not supported out of the box and may require a [custom kernel](https://falco.org/blog/falco-wsl2-custom-kernel/);
+see [`README_WSL.md`](README_WSL.md) for a step-by-step guide. More information is available in the
+[falcosecurity/charts](https://github.com/falcosecurity/charts/tree/master/charts/falco#about-drivers) docs.
+
+### Kind Clusters
+
+Falco needs kernel access, so a Kind cluster needs `/dev` and `/var/run/docker.sock` mounted into its nodes. The
+[required extra mounts](https://falco.org/docs/getting-started/learning-environments/#kind) are already part of the
+[SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace).
+
+## Troubleshooting
+
+### `curl: (22) The requested URL returned error: 404` While Downloading The Driver
+
+The prebuilt driver may not be available yet. Falco can't download it and fails to start; the logs show the
+name of the file it tried to download. Check the
+[prebuilt driver availability index](https://download.falco.org/driver/site/index.html?lib=3.0.1%2Bdriver&target=all&arch=all&kind=all)
+to see whether one exists. The file Falco tries to download depends on the host's **kernel version** and
+**operating system**. If you recently updated the host operating system, try booting with an older kernel.
+
+### `Error: error opening device /host/dev/falco0`
+
+Falco needs `/dev` and `/var/run/docker.sock` available in the Kind cluster. Pull the latest version of the
+[SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace),
+remove your existing local cluster, and initialize it again.
+
+### `Error: Could not create inotify handler` Or `Error: Too many files open`
+
+This is a [Kind](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files) related
+problem. Fix it with:
+
+```sh
+ sudo sysctl fs.inotify.max_user_watches=524288
+ sudo sysctl fs.inotify.max_user_instances=512
+```
+
+Persist the setting across reboots:
+
+```sh
+ echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf
+ echo "fs.inotify.max_user_instances = 512" | sudo tee -a /etc/sysctl.conf
+```

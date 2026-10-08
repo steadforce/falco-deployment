@@ -1,0 +1,4 @@
+falco:
+  resources:
+    requests:
+      memory: 256Mi

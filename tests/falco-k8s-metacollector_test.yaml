@@ -1,0 +1,15 @@
+suite: k8s-metacollector enablement per cluster
+release:
+  name: falco
+templates:
+- charts/falco/charts/k8s-metacollector/templates/deployment.yaml
+tests:
+- it: deploys the k8s-metacollector for all clusters
+  values:
+  - ../values-subchart-overrides.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - equal:
+      path: kind
+      value: Deployment
