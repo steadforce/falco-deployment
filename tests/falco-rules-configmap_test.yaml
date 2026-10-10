@@ -4,7 +4,7 @@ release:
 templates:
 - charts/falco/templates/rules-configmap.yaml
 tests:
-- it: renders the shared custom rules file for all clusters
+- it: renders only the shared custom rules file on non-local clusters
   values:
   - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
   asserts:
@@ -12,6 +12,25 @@ tests:
       path: &sharedCustomRulesPath data["customized-rules.yaml"]
   - notExists:
       path: &localCustomRulesPath data["customized-local-rules.yaml"]
+- it: sets the shared allow-lists and exclusion macros in the custom rules file
+  values:
+  - *subchartOverrideValuesFile
+  asserts:
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: "(?m)^- list: known_drop_and_execute_containers\\n  items: \\[.*gcr\\.io/kaniko-project/executor.*\\]$"
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: "(?m)^- list: read_sensitive_file_images$"
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: "(?m)^- macro: user_known_contact_k8s_api_server_activities$"
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: "(?m)^- macro: user_known_stand_streams_redirect_activities$"
+  - matchRegex:
+      path: *sharedCustomRulesPath
+      pattern: "(?m)^- macro: user_shell_container_exclusions$"
 - it: additionally renders the local-only custom rules file on local development
   values:
   - *subchartOverrideValuesFile
@@ -21,3 +40,17 @@ tests:
       path: *sharedCustomRulesPath
   - exists:
       path: *localCustomRulesPath
+- it: appends the local-only exceptions to the shared rules on local development
+  values:
+  - *subchartOverrideValuesFile
+  - ../values-local.yaml
+  asserts:
+  - matchRegex:
+      path: *localCustomRulesPath
+      pattern: "(?m)^- list: known_drop_and_execute_containers\\n  items: \\[kindest/node\\]$"
+  - matchRegex:
+      path: *localCustomRulesPath
+      pattern: "(?s)- rule: Drop and execute new binary in container\\n.*?override:\\n    condition: append"
+  - matchRegex:
+      path: *localCustomRulesPath
+      pattern: "(?s)- macro: user_known_contact_k8s_api_server_activities\\n.*?override:\\n    condition: append"

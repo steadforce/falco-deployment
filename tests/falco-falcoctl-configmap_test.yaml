@@ -1,0 +1,15 @@
+suite: falcoctl artifact install refs driven by cluster overrides
+release:
+  name: falco
+  namespace: falco
+templates:
+- charts/falco/templates/falcoctl-configmap.yaml
+values:
+- ../values-subchart-overrides.yaml
+tests:
+# collectors.kubernetes.enabled adds the k8smeta plugin artifact to the install refs
+- it: installs the k8smeta plugin artifact
+  asserts:
+  - matchRegex:
+      path: data["falcoctl.yaml"]
+      pattern: "(?s)\\n  install:\\n.*?\\n    refs:\\n(    - [^\\n]*\\n)*    - ghcr\\.io/falcosecurity/plugins/plugin/k8smeta:"
