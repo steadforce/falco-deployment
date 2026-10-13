@@ -173,7 +173,7 @@ Chart behavior is covered by [helm-unittest](https://github.com/helm-unittest/he
 - the debug log level on `local` and the default level elsewhere,
 - the shared and the local-only custom rules files,
 - the k8s-metacollector deployment, and the `k8smeta` plugin that falco loads and falcoctl installs for it,
-- the `ServiceMonitor` and its `prometheus: cluster-monitoring` label,
+- the `ServiceMonitor`, its `prometheus: cluster-monitoring` label, and its `type: falco-metrics` Service selector,
 - falco container resources on `local`, on `sf-k8s04-dev`, and on every other cluster,
 - snapshots of the daemonset on `local` and on the shared clusters.
 

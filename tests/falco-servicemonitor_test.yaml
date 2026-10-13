@@ -24,6 +24,12 @@ tests:
   - equal:
       path: metadata.labels.prometheus
       value: cluster-monitoring
+- it: selects the falco metrics Service by the type=falco-metrics label
+  templates: [*serviceMonitorTemplate]
+  asserts:
+  - equal:
+      path: spec.selector.matchLabels.type
+      value: falco-metrics
 # metrics.enabled in values-subchart-overrides.yaml renders the metrics Service the
 # ServiceMonitor selects via the type=falco-metrics label
 - it: renders the falco metrics Service selected by the ServiceMonitor

@@ -50,7 +50,7 @@ tests:
       pattern: "(?m)^- list: known_drop_and_execute_containers\\n  items: \\[kindest/node\\]$"
   - matchRegex:
       path: *localCustomRulesPath
-      pattern: "(?s)- rule: Drop and execute new binary in container\\n.*?override:\\n    condition: append"
+      pattern: "(?m)^- rule: Drop and execute new binary in container\\n(?:  .*\\n)*?  override:\\n    condition: append$"
   - matchRegex:
       path: *localCustomRulesPath
-      pattern: "(?s)- macro: user_known_contact_k8s_api_server_activities\\n.*?override:\\n    condition: append"
+      pattern: "(?m)^- macro: user_known_contact_k8s_api_server_activities\\n(?:  .*\\n)*?  override:\\n    condition: append$"
