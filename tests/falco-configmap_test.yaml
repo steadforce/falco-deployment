@@ -1,10 +1,11 @@
 suite: falco application config driven by cluster overrides
 release:
   name: falco
+  namespace: falco
 templates:
 - charts/falco/templates/configmap.yaml
 values:
-- &subchartOverridesValuesFile ../values-subchart-overrides.yaml
+- &subchartOverrideValuesFile ../values-subchart-overrides.yaml
 tests:
 - it: enables the modern eBPF driver via the modern-bpf alias
   asserts:
@@ -28,9 +29,9 @@ tests:
   - matchRegex:
       path: *falcoYamlPath
       pattern: "(?s)webserver:.*?prometheus_metrics_enabled: true"
-- it: sets the debug log level for local development
+- it: sets the debug log level on local development
   values:
-  - *subchartOverridesValuesFile
+  - *subchartOverrideValuesFile
   - ../values-local.yaml
   asserts:
   - matchRegex:
@@ -41,3 +42,13 @@ tests:
   - notMatchRegex:
       path: *falcoYamlPath
       pattern: *debugLogLevelPattern
+# collectors.kubernetes.enabled in values-subchart-overrides.yaml wires falco to the
+# k8s-metacollector through the k8smeta plugin
+- it: loads the k8smeta plugin for the kubernetes metadata collector
+  asserts:
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?m)^load_plugins:\\n(- .*\\n)*- k8smeta$"
+  - matchRegex:
+      path: *falcoYamlPath
+      pattern: "(?s)collectorHostname: falco-k8s-metacollector\\.falco\\.svc\\n.*?name: k8smeta"

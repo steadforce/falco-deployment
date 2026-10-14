@@ -7,16 +7,24 @@ tests:
   - charts/falco/templates/daemonset.yaml
   asserts:
   - matchSnapshot: {}
+  # layered like the local hydration environment
   values: &localValues
+  - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
   - ../values-local.yaml
-- it: sets falco container cpu requests/limits and memory requests to 0 on the local cluster
+- it: matches the shared cluster daemonset snapshot
+  templates: *daemonsetTemplate
+  values:
+  - *subchartOverrideValuesFile
+  asserts:
+  - matchSnapshot: {}
+- it: sets falco container cpu and memory requests and the cpu limit to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
   asserts:
   - matchRegex:
       path: &cpuLimitsPath spec.template.spec.containers[?(@.name == "falco")].resources.limits.cpu
       # on local cluster we expect 0 or 0m cpu limits
-      pattern: &localCpuPattern "^0(m)?$"
+      pattern: &zeroCpuPattern "^0(m)?$"
   - matchRegex:
       path: &memoryLimitsPath spec.template.spec.containers[?(@.name == "falco")].resources.limits.memory
       # on local cluster we expect non 0 memory limits
@@ -24,7 +32,7 @@ tests:
   - matchRegex:
       path: &cpuRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.cpu
       # on local cluster we expect 0 or 0m cpu requests
-      pattern: *localCpuPattern
+      pattern: *zeroCpuPattern
   - matchRegex:
       path: &memoryRequestsPath spec.template.spec.containers[?(@.name == "falco")].resources.requests.memory
       # on local cluster we expect 0, 0Ki, 0Mi, or 0Gi memory requests
@@ -32,7 +40,7 @@ tests:
 - it: sets non-zero falco container cpu and memory requests and limits on non-local clusters
   templates: *daemonsetTemplate
   values:
-  - &subchartOverrides ../values-subchart-overrides.yaml
+  - *subchartOverrideValuesFile
   asserts:
   - matchRegex:
       path: *cpuLimitsPath
@@ -53,17 +61,17 @@ tests:
 - it: runs the falco container privileged rather than with the least-privileged capability set
   templates: *daemonsetTemplate
   values:
-  - ../values-subchart-overrides.yaml
+  - *subchartOverrideValuesFile
   asserts:
   - equal:
       path: spec.template.spec.containers[?(@.name == "falco")].securityContext.privileged
       value: true
   - notExists:
       path: spec.template.spec.containers[?(@.name == "falco")].securityContext.capabilities
-- it: lowers the falco memory request on the k8s04-dev cluster
+- it: lowers the falco container memory request to 256Mi on the sf-k8s04-dev cluster
   templates: *daemonsetTemplate
   values:
-  - *subchartOverrides
+  - *subchartOverrideValuesFile
   - ../values-sf-k8s04-dev.yaml
   asserts:
   # the 768Mi request from the subchart overrides does not fit on the OVH nodes
