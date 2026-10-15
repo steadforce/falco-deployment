@@ -4,6 +4,8 @@ on:
   push:
     branches:
     - main
+  # run the hydration on demand, e.g. after a hydration PR was merged or closed
+  workflow_dispatch:
 
 permissions:
   contents: write
