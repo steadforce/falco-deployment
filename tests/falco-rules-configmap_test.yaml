@@ -60,7 +60,7 @@ tests:
       pattern: 'proc\.name in \("rkhunter", "cp", "sh"\)'
 - it: sets the shared allow-lists and exclusion macros in the custom rules file
   values:
-  - *subchartOverrideValuesFile
+  - *subchartOverrideValues
   asserts:
   - matchRegex:
       path: *sharedCustomRulesPath
@@ -88,7 +88,7 @@ tests:
       path: *localCustomRulesPath
 - it: appends the local-only exceptions to the shared rules on local development
   values:
-  - *subchartOverrideValuesFile
+  - *subchartOverrideValues
   - ../values-local.yaml
   asserts:
   - matchRegex:
