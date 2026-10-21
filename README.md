@@ -38,7 +38,7 @@ Which value files apply to which cluster is controlled centrally by `helm-config
 ## Prerequisites
 
 - [Docker](https://www.docker.com/) for the containerized commands in this guide.
-- Optionally, the [SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace)
+- Optionally, the [SteadOps-Steadies-K8s-Workplace](https://github.com/steadforce/SteadOps-Steadies-K8s-Workplace)
   workbench. It ships `helm`, `yq`, `kubectl`, `hetzner-k3s`, and `act`, so the workbench commands below run
   directly from its shell without a `docker run` wrapper.
 
@@ -356,7 +356,7 @@ see [`README_WSL.md`](README_WSL.md) for a step-by-step guide. More information 
 
 Falco needs kernel access, so a Kind cluster needs `/dev` and `/var/run/docker.sock` mounted into its nodes. The
 [required extra mounts](https://falco.org/docs/getting-started/learning-environments/#kind) are already part of the
-[SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace).
+[SteadOps-Steadies-K8s-Workplace](https://github.com/steadforce/SteadOps-Steadies-K8s-Workplace).
 
 ## Troubleshooting
 
@@ -371,7 +371,7 @@ to see whether one exists. The file Falco tries to download depends on the host'
 ### `Error: error opening device /host/dev/falco0`
 
 Falco needs `/dev` and `/var/run/docker.sock` available in the Kind cluster. Pull the latest version of the
-[SteadOps-Steadies-K8s-Workplace](https://gitea.cloud01.intern.steadforce.com/Playground/SteadOps-Steadies-K8s-Workplace),
+[SteadOps-Steadies-K8s-Workplace](https://github.com/steadforce/SteadOps-Steadies-K8s-Workplace),
 remove your existing local cluster, and initialize it again.
 
 ### `Error: Could not create inotify handler` Or `Error: Too many files open`
