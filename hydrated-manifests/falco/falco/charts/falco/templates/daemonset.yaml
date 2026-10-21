@@ -6,10 +6,10 @@ metadata:
   name: falco
   namespace: falco
   labels:
-    helm.sh/chart: falco-8.0.5
+    helm.sh/chart: falco-9.1.0
     app.kubernetes.io/name: falco
     app.kubernetes.io/instance: falco
-    app.kubernetes.io/version: "0.43.1"
+    app.kubernetes.io/version: "0.44.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
@@ -23,8 +23,8 @@ spec:
         app.kubernetes.io/name: falco
         app.kubernetes.io/instance: falco
       annotations:
-        checksum/config: 0862248cac2709e54d4f50585f9285b9a63025630dfe2520085585fdc41de73f
-        checksum/rules: 11f93416c3386b6d7b3043afbeca573f347557a707a7124d26805811f40a0f81
+        checksum/config: c927000c88375b54c4d9f7a4e1f99ba2dd69a431cfb58edcb2e5ae4fcad4b919
+        checksum/rules: 2718119c4b0d7cfd0c652356eb7ed0c00e4507998e899c515ac9583686f61d40
         checksum/certs: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       serviceAccountName: falco
@@ -35,7 +35,7 @@ spec:
           key: node-role.kubernetes.io/control-plane
       containers:
         - name: falco
-          image: docker.io/falcosecurity/falco:0.43.1
+          image: docker.io/falcosecurity/falco:0.44.1
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -121,7 +121,7 @@ spec:
             - mountPath: /etc/falco/rules.d
               name: rules-volume
         - name: falcoctl-artifact-follow
-          image: docker.io/falcosecurity/falcoctl:0.12.2
+          image: docker.io/falcosecurity/falcoctl:0.13.0
           imagePullPolicy: IfNotPresent
           args:
             - artifact
@@ -139,7 +139,7 @@ spec:
               name: artifact-state-dir
       initContainers:
         - name: falcoctl-artifact-install
-          image: docker.io/falcosecurity/falcoctl:0.12.2
+          image: docker.io/falcosecurity/falcoctl:0.13.0
           imagePullPolicy: IfNotPresent
           args:
             - artifact
