@@ -17,6 +17,14 @@ tests:
   - *subchartOverrideValuesFile
   asserts:
   - matchSnapshot: {}
+- it: runs falco pods with system-node-critical priority
+  templates: *daemonsetTemplate
+  values:
+  - *subchartOverrideValuesFile
+  asserts:
+  - equal:
+      path: spec.template.spec.priorityClassName
+      value: system-node-critical
 - it: sets falco container cpu and memory requests and the cpu limit to 0 on the local cluster
   templates: *daemonsetTemplate
   values: *localValues
