@@ -1,4 +1,5 @@
 falco:
+  podPriorityClassName: system-node-critical
   collectors:
     kubernetes:
       enabled: true
