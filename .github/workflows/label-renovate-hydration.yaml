@@ -20,12 +20,12 @@ jobs:
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: steadforce/steadops-workflows/.github/workflows/label-renovate-hydration.yaml@0e96a75bfbed5cb37ab9b1c72a5926beb0d5d4be
+    uses: steadforce/steadops-workflows/.github/workflows/label-renovate-hydration.yaml@bdcdae9989135aa5672f87ce1cb42920d015ff78
     with:
-      workflows-ref: 0e96a75bfbed5cb37ab9b1c72a5926beb0d5d4be
+      workflows-ref: bdcdae9989135aa5672f87ce1cb42920d015ff78
       sha: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
       helm-version: v3.19.0
       yq-version: v4.49.2
       charts-root: .
-      layout: multi-chart
+      layout: single-chart
       eligible-update-labels: '["update:patch"]'
