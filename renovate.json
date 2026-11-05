@@ -45,6 +45,43 @@
         "major",
         "minor"
       ]
+    },
+    {
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "addLabels": [
+        "update:patch"
+      ]
+    },
+    {
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "addLabels": [
+        "update:minor"
+      ]
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "addLabels": [
+        "update:major"
+      ]
+    },
+    {
+      "description": "Maintain the shared hydration labeller with native GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "steadforce/steadops-workflows"
+      ],
+      "matchFileNames": [
+        ".github/workflows/label-renovate-hydration.yaml"
+      ],
+      "pinDigests": true
     }
   ]
 }

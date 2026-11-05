@@ -15,3 +15,5 @@ permissions:
 jobs:
   hydration:
     uses: steadforce/steadops-workflows/.github/workflows/helm-hydration.yaml@v4.3.0
+    with:
+      helm-version: v3.19.0
