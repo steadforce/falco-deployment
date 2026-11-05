@@ -11,6 +11,7 @@ on:
     types: [synchronize, reopened, edited]
   workflow_dispatch:
 permissions:
+  actions: read
   contents: read
   pull-requests: write
   issues: write
@@ -20,9 +21,8 @@ jobs:
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: steadforce/steadops-workflows/.github/workflows/label-renovate-hydration.yaml@7f09f17425528ca86ef3caab4b3b897d199a5659
+    uses: steadforce/steadops-workflows/.github/workflows/label-renovate-hydration.yaml@6b07642d1e40403c9030bbc5ccf3209454dabf67 # add-label-renovate-hydration-workflow
     with:
-      workflows-ref: 7f09f17425528ca86ef3caab4b3b897d199a5659
       sha: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
       helm-version: v3.19.0
       yq-version: v4.49.2
