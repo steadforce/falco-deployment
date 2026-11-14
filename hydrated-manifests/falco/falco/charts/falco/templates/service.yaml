@@ -22,3 +22,4 @@ spec:
   selector:
     app.kubernetes.io/name: falco
     app.kubernetes.io/instance: falco
+
