@@ -35,14 +35,14 @@ spec:
           securityContext:
             capabilities:
               drop:
-                - ALL
+              - ALL
           image: "docker.io/falcosecurity/k8s-metacollector:0.1.1"
           imagePullPolicy: IfNotPresent
           command:
             - /meta-collector
           args:
             - run
-          ports:
+          ports:            
             - name: "broker-grpc"
               containerPort: 45000
               protocol: TCP
@@ -66,4 +66,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
-          resources: {}
+          resources:
+            {}
+
