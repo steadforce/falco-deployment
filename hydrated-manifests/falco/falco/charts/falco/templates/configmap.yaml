@@ -169,4 +169,3 @@ data:
       ssl_certificate: /etc/falco/falco.pem
       ssl_enabled: false
       threadiness: 0
-

@@ -30,4 +30,3 @@ spec:
   selector:
     app.kubernetes.io/name: k8s-metacollector
     app.kubernetes.io/instance: falco
-

@@ -218,4 +218,3 @@ spec:
             name: falco-rules
   updateStrategy:
     type: RollingUpdate
-

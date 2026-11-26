@@ -29,4 +29,3 @@ spec:
   namespaceSelector:
     matchNames:
       - falco
-

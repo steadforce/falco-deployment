@@ -68,4 +68,3 @@ spec:
             timeoutSeconds: 5
           resources:
             {}
-
