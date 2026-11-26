@@ -1,0 +1,25 @@
+name: Label Renovate hydration
+on:
+  workflow_run:
+    workflows: [Helm hydration]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+  issues: write
+jobs:
+  label:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    uses: steadforce/steadops-workflows/.github/workflows/label-renovate-hydration.yaml@40abeb4c042f5617a44020c2b32967c586820aba # v4.5.2
+    with:
+      sha: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+      helm-version: v3.19.0
+      charts-root: .
+      layout: single-chart
+      eligible-update-labels: '["update:patch"]'
