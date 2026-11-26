@@ -37,3 +37,4 @@ data:
     indexes:
     - name: falcosecurity
       url: https://falcosecurity.github.io/falcoctl/index.yaml
+

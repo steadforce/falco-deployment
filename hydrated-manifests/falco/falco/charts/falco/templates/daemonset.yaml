@@ -28,6 +28,7 @@ spec:
         checksum/certs: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     spec:
       serviceAccountName: falco
+      priorityClassName: system-node-critical
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
@@ -47,7 +48,7 @@ spec:
           securityContext:
             privileged: true
           args:
-            - /usr/bin/falco
+            - /usr/bin/falco        
           env:
             - name: HOST_ROOT
               value: /host
@@ -181,7 +182,7 @@ spec:
         - name: artifact-state-dir
           emptyDir: {}
         - name: root-falco-fs
-          emptyDir: {}
+          emptyDir: {}  
         - name: boot-fs
           hostPath:
             path: /boot
@@ -201,7 +202,7 @@ spec:
           hostPath:
             path: /proc
         - name: falcoctl-config-volume
-          configMap:
+          configMap: 
             name: falco-falcoctl
             items:
               - key: falcoctl.yaml
@@ -210,10 +211,11 @@ spec:
           configMap:
             name: falco
             items:
-              - key: falco.yaml
-                path: falco.yaml
+            - key: falco.yaml
+              path: falco.yaml
         - name: rules-volume
           configMap:
             name: falco-rules
   updateStrategy:
     type: RollingUpdate
+
